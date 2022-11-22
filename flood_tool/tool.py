@@ -7,6 +7,8 @@ import pandas as pd
 
 from .geo import *
 
+from .local_authority import *
+
 
 __all__ = ['Tool']
 
@@ -284,7 +286,7 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_altitude_estimate method.
         """
-        return {'Do Nothing': 0}
+        return {'Do Nothing': 0, 'K-Neighbors': 1}
 
     def get_local_authority_estimate(self, eastings, northings, method=0):
         """
@@ -316,7 +318,9 @@ class Tool(object):
                                     zip(eastings, northings)],
                              name='localAuthority')
         else:
-            raise NotImplementedError
+            local_authority_model = LocalAuthorityModel('resources/postcodes_sampled.csv', method)
+            local_authority_pred = local_authority_model.predict(eastings=eastings, northings=northings)
+            return local_authority_pred
 
     def get_total_value(self, postal_data):
         """
