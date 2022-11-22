@@ -5,7 +5,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from .geo import *
+from geo import *
+from flood_probability import *
 
 
 __all__ = ['Tool']
@@ -99,7 +100,11 @@ class Tool(object):
             the input postcodes. Invalid postcodes (i.e. not in the
             input unlabelled postcodes file) return as NAN.
         """
-        return pd.DataFrame()
+        frame = self.postcodedb.copy()
+        lat,lon = get_gps_lat_long_from_easting_northing(frame.easting, frame.northing)
+        res = pd.DataFrame(lat,columns=['lat'],index = frame.postcode)
+        res['lon'] = lon
+        return res
 
     @staticmethod
     def get_flood_class_from_postcodes_methods():
@@ -144,7 +149,7 @@ class Tool(object):
                              index=np.asarray(postcodes),
                              name='riskLabel')
         else:
-            raise NotImplementedError
+            return model_predict(postcodes)
 
     @staticmethod
     def get_flood_class_from_locations_methods():
