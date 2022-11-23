@@ -1,4 +1,4 @@
-from numpy import array, asarray, mod, sin, cos, tan, sqrt, arctan2, floor, rad2deg, deg2rad, stack
+from numpy import array, asarray, mod, sin, cos, tan, sqrt, arctan2, floor, rad2deg, deg2rad, stack, hstack
 from scipy.linalg import inv
 
 __all__ = ['get_easting_northing_from_gps_lat_long',
@@ -73,7 +73,7 @@ def rad2dms(rad, dms=False):
         return deg
 
 osgb36 = Datum(a=6377563.396,
-               b=6356256.910,
+               b=6356256.909,
                F_0=0.9996012717,
                phi_0=deg2rad(49.0),
                lam_0=deg2rad(-2.),
@@ -133,17 +133,20 @@ def xyz_to_lat_long(x,y,z, rads=False, datum=osgb36):
 
     return phi, lam
 
-def get_easting_northing_from_gps_lat_long(phi, lam, rads=False):
-    """ Get OSGB36 easting/northing from GPS latitude and longitude pairs.
+def get_easting_northing_from_gps_lat_long(phi, lam, rads=False, datum=osgb36):
+    """ Get OSGB36 easting/northing from GPS latitude and longitude pairs. Not 100% accurate. A relative error about ~ 1e-6
 
     Parameters
     ----------
     phi: float/arraylike
-        GPS (i.e. WGS84 datum) latitude value(s)
+        GPS (i.e. WGS84 datum) latitude value(s) north
     lam: float/arrayling
-        GPS (i.e. WGS84 datum) longitude value(s).
+        GPS (i.e. WGS84 datum) longitude value(s). NB. 355E should beinput as  -5
     rads: bool (optional)
         If true, specifies input is is radians.
+    datum: Datum (optional)
+        Datum to use for conversion.
+        
     Returns
     -------
     numpy.ndarray
@@ -153,18 +156,66 @@ def get_easting_northing_from_gps_lat_long(phi, lam, rads=False):
         Examples
     --------
     >>> get_easting_northing_from_gps_lat_long([55.5], [-1.54])
-    (array([429157.0]), array([623009]))
+    (array([429157.5449495]), array([623009.09798641]))
+    
     References
     ----------
     Based on the formulas in "A guide to coordinate systems in Great Britain".
-    See also https://webapps.bgs.ac.uk/data/webservices/convertForm.cfm
+    See also https://webapps.bgs.ac.uk/data/webservices/convertForm.cfm ; 
+    https://scipython.com/book2/chapter-2-the-core-python-language-i/additional-problems/converting-between-an-os-grid-reference-and-longitudelatitude/
     """
+    phi,lam = array(phi), array(lam)
+    phi,lam = WGS84toOSGB36(phi,lam)
 
-    return NotImplemented
 
-def get_gps_lat_long_from_easting_northing(east, north, rads=False, dms=False):
+    if not rads:
+        phi, lam = dms2rad(phi), dms2rad(lam)
+
+    a, b, F0, N0, lambda0, phi0, E0, e2, n = datum.a, datum.b, datum.F_0, datum.N_0, datum.lam_0, datum.phi_0, datum.E_0, datum.e2, datum.n
+    
+
+    nu = a*F0 / sqrt(1-e2*sin(phi)**2)
+    rho = a*F0*(1-e2)*(1-e2*sin(phi)**2)**(-1.5)
+    eta2 = nu/rho - 1
+
+    sinPhi = sin(phi)
+    cosPhi = cos(phi)
+    cosPhi2 = cosPhi**2
+    cosPhi3 = cosPhi2*cosPhi
+    cosPhi5 = cosPhi3*cosPhi2
+    tanPhi2 = tan(phi)**2
+    tanPhi4 = tanPhi2*tanPhi2
+    
+    # M
+    n2 = n**2
+    n3 = n*n2
+    dphi, sphi = phi - phi0, phi + phi0
+    M = b*F0*((1 + n + 5/4*(n2+n3))*dphi
+            - (3*n + 3*n2 + 21/8*n3)*sin(dphi)*cos(sphi)
+            + (15/8*(n2 + n3))*sin(2*dphi)*cos(2*sphi)
+            - (35/24*n3*sin(3*dphi)*cos(3*sphi)))
+    
+
+    one = M + N0
+    two = nu/2*sinPhi*cosPhi
+    thr = nu/24*sinPhi*cosPhi3*(5 - tanPhi2 + 9*eta2)
+    thrA = nu/720*sinPhi*cosPhi5*(61 - 58*tanPhi2 + tanPhi4)
+    
+    fou = nu*cosPhi
+    fiv = nu/6*cosPhi3*(nu/rho - tanPhi2)
+    six = nu/120*cosPhi5*(5 - 18*tanPhi2 + tanPhi4 + eta2*(14 - 58*tanPhi2))
+    delLam = lam - lambda0
+    delLam2 = delLam**2
+   
+    N = one + delLam2*(two + delLam2*(thr + thrA*delLam2))
+    E = E0 + delLam*(fou + delLam2*(fiv + six*delLam2))
+    return array(E), array(N)
+    
+    
+
+def get_gps_lat_long_from_easting_northing(east, north, rads=False, dms=False,datum=osgb36):
     """ Get OSGB36 easting/northing from GPS latitude and
-    longitude pairs.
+    longitude pairs.  A relative error about ~ 1e-5
     Parameters
     ----------
     east: float/arraylike
@@ -185,14 +236,100 @@ def get_gps_lat_long_from_easting_northing(east, north, rads=False, dms=False):
     Examples
     --------
     >>> get_gps_lat_long_from_easting_northing([429157], [623009])
-    (array([55.5]), array([-1.540008]))
+    (array([55.4972255]), array([-1.54004092]))
+    
     References
     ----------
     Based on the formulas in "A guide to coordinate systems in Great Britain".
-    See also https://webapps.bgs.ac.uk/data/webservices/convertForm.cfm
+    See also https://webapps.bgs.ac.uk/data/webservices/convertForm.cfm;
+    https://scipython.com/book2/chapter-2-the-core-python-language-i/additional-problems/converting-between-an-os-grid-reference-and-longitudelatitude/
     """
+    
+    e2 = datum.e2
+    east=array(east)
+    north=array(north)
+    phi=[]
+    lam=[]
+    for i in range(len(east)):
+        M, phip = 0, datum.phi_0
+        if  abs(north[i]-datum.N_0-M) < 1.e-5:
+            M, phip = 0, datum.phi_0
+        if  abs(north[i]-datum.N_0-M) >= 1.e-5:
+            phip = (north[i] - datum.N_0 - M)/(datum.a*datum.F_0) + phip
+            n = (datum.a-datum.b)/(datum.a+datum.b)
+            n2 = n**2
+            n3 = n * n2
+            dphi, sphi = phip - datum.phi_0, phip + datum.phi_0
+            M = datum.b * datum.F_0 * (
+                (1 + n + 5/4 * (n2+n3)) * dphi
+              - (3*n + 3*n2 + 21/8 * n3) * sin(dphi) * cos(sphi)
+              + (15/8 * (n2 + n3)) * sin(2*dphi) * cos(2*sphi)
+              - (35/24 * n3 * sin(3*dphi) * cos(3*sphi))
+            )
+        rho = datum.a * datum.F_0 * (1-e2) * (1-e2*sin(phip)**2)**-1.5
+        nu = datum.a * datum.F_0 / sqrt(1-e2*sin(phip)**2)
+        eta2 = nu/rho - 1
+        tan_phip = tan(phip)
+        tan_phip2 = tan_phip**2
+        nu3, nu5 = nu**3, nu**5
+        sec_phip = 1./cos(phip)
+        c1 = tan_phip/2/rho/nu
+        c2 = tan_phip/24/rho/nu3 * (5 + 3*tan_phip2 + eta2 * (1 - 9*tan_phip2))
+        c3 = tan_phip / 720/rho/nu5 * (61 + tan_phip2*(90 + 45 * tan_phip2))
+        d1 = sec_phip / nu
+        d2 = sec_phip / 6 / nu3 * (nu/rho + 2*tan_phip2)
+        d3 = sec_phip / 120 / nu5 * (5 + tan_phip2*(28 + 24*tan_phip2))
+        d4 = sec_phip / 5040 / nu**7 *  (61 + tan_phip2*(662 + tan_phip2*
+                                                        (1320 + tan_phip2*720)))
+   
+    
+        EmE0 = east[i] - datum.E_0
+        EmE02 = EmE0**2
+        phi.append( phip + EmE0**2 * (-c1 + EmE02*(c2 - c3*EmE02)))
+        lam.append( datum.lam_0 + EmE0 * (d1 + EmE02*(-d2 + EmE02*(d3 - d4*EmE02))))
+    if rads:
+        res = dms2rad(OSGB36toWGS84(rad2dms(phi), rad2dms(lam)))
+        return res[0],res[1]
+    elif dms:
+        deg = OSGB36toWGS84(rad2dms(phi), rad2dms(lam))
+        return deg2dms(deg)
+    else:
+        return OSGB36toWGS84(rad2dms(phi), rad2dms(lam))
+    
+def deg2dms(dd):
+    """Convert decimal lat,lon to lat lon in degrees, minutes, seconds.
+    
+    Parameters
+    ----------
+    dd: tuple
+        tuple of 2 arrays of lat and lon in degrees respectively.
 
-    return NotImplemented
+    Returns
+    -------
+    numpy.ndarray
+        lat in dms
+    numpy.ndarray
+        lon in dms    
+    References
+    ----------
+   First answer: https://stackoverflow.com/questions/2579535/convert-dd-decimal-degrees-to-dms-degrees-minutes-seconds-in-python
+    """
+    latdms,londms=[],[]
+    for i in (dd[0]):
+        mult = -1 if i < 0 else 1
+        mnt,sec = divmod(abs(i)*3600, 60)
+        deg,mnt = divmod(mnt, 60)
+        latdms.append(array([mult*deg, mult*mnt, mult*sec]))
+   
+    for i in (dd[1]):
+        mult = -1 if i < 0 else 1
+        mnt,sec = divmod(abs(i)*3600, 60)
+        deg,mnt = divmod(mnt, 60)
+        londms.append(array([mult*deg, mult*mnt, mult*sec]))
+              
+    return array(latdms),array(londms)
+    
+
 
 class HelmertTransform(object):
     """Callable class to perform a Helmert transform."""
