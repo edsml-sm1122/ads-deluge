@@ -11,6 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_validate
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import OneHotEncoder
 from scipy.stats import zscore
 
@@ -45,7 +46,7 @@ class MedianPriceModel:
         method_dict = {1: KNeighborsRegressor()}
 
         # Transform columns
-        num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', MinMaxScaler())])
+        num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', RobustScaler())])
         cat_pipe = Pipeline([('imputer', SimpleImputer(strategy='most_frequent')), ('encoder', OneHotEncoder(handle_unknown='ignore', sparse=False))])
 
         preproc = ColumnTransformer([
@@ -53,16 +54,15 @@ class MedianPriceModel:
             ('cat_pipe', cat_pipe, ['soilType'])], remainder='drop')
 
         # Combine preprocessing and model
-        pipe = Pipeline([('preproc',preproc)
-        , ('model', method_dict[method])])
+        pipe = Pipeline([('preproc',preproc), ('model', method_dict[method])])
 
         return pipe
 
     def train_model(self):
-        param_grid = {'model__n_neighbors':[1,2,3,5,10,40,100]}
-        cv = GridSearchCV(self.model, scoring='neg_root_mean_squared_error', 
-        param_grid=param_grid, cv=5, n_jobs=-1)
+        param_grid = {'model__n_neighbors':[1,2,3,5,10,40,100],'model__weights':['uniform','distance'], 
+        'model__algorithm':['auto', 'ball_tree', 'kd_tree', 'brute'], 'model__p':[1,2]}
 
+        cv = GridSearchCV(self.model, scoring='neg_root_mean_squared_error', param_grid=param_grid, cv=5, n_jobs=-1)
         cv.fit(self.X_train, self.y_train)
 
         return cv.best_estimator_
