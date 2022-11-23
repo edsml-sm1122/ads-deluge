@@ -85,8 +85,8 @@ class Tool(object):
             by the input postcodes. Invalid postcodes (i.e. not in the
             input unlabelled postcodes file) return as NaN.
          """
-        frame = pd.read_csv(self.postcode_unlabelled_file)
-        # frame = self.postcodedb.copy()
+         
+        frame = self.postcodedb.copy()
         frame = frame.set_index('postcode')
 
         return frame.loc[postcodes, ['easting', 'northing']]
