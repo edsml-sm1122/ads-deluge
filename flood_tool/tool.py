@@ -5,9 +5,11 @@ import os
 import numpy as np
 import pandas as pd
 
-from geo import *
-import flood_prob
+from .geo import *
+from .flood_prob import *
 
+# import geo
+# import flood_prob
 
 __all__ = ['Tool']
 
@@ -157,7 +159,7 @@ class Tool(object):
         else:
             raise IndexError('Method should be between 0 and 2')
         
-        model = flood_prob.FloodProbModel(selected_method)
+        model = FloodProbModel(selected_method)
         model.train_model()
         
         if isinstance(postcodes, str):

@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+import os
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
@@ -24,7 +25,12 @@ class FloodProbModel:
             Available option: 'KNN' for KNeighborsClassifier, 'RandomForest' for
             RandomForestClassifier, 'SVC' for Support Vector Classifier        
         """
+        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        self.df1 = pd.read_csv(filepath1)
+        self.df2 = pd.read_csv(filepath2)
         self.model = model
+
         
     def train_model(self, oversample=False, accuracy_scoring=False):
         """
@@ -52,9 +58,9 @@ class FloodProbModel:
         >>> model.train_model()
         KNeighborsClassifier(), 0.752106
         """
-        df = pd.read_csv('resources/postcodes_sampled.csv')
-        y = df.riskLabel
-        X = df.drop(columns=['postcode', 'sector', 'localAuthority', 'riskLabel', 'medianPrice'])
+
+        y = self.df1.riskLabel
+        X = self.df1.drop(columns=['postcode', 'sector', 'localAuthority', 'riskLabel', 'medianPrice'])
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, random_state=42)
 
@@ -64,8 +70,9 @@ class FloodProbModel:
         ])
         self.preproc = preproc
 
-        X_train = preproc.fit_transform(X_train)
-        X_test = preproc.transform(X_test)
+        self.preproc.fit(X_train)
+        X_train = self.preproc.transform(X_train)
+        X_test = self.preproc.transform(X_test)
         
         #if oversample == True: #not used until approved by instructor
         #    sm = SMOTE(k_neighbors=5,random_state = 42) 
@@ -74,7 +81,7 @@ class FloodProbModel:
 
         if self.model == 'KNN':
             selected = KNeighborsClassifier()
-        elif self.model == 'SVM':
+        elif self.model == 'SVC':
             selected = SVC()
         elif self.model == 'RandomForest':
             selected = RandomForestClassifier()
@@ -146,10 +153,9 @@ class FloodProbModel:
            easting   northing  altitude  soilType
         0  469395.0  108803.0  30        Planosols
         """
-        df1 = pd.read_csv('resources/postcodes_sampled.csv')
-        df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'], inplace=True)
-        df2 = pd.read_csv('resources/postcodes_unlabelled.csv')
-        df2.drop(columns=['sector', 'localAuthority'], inplace=True)
+    
+        df1 = self.df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
+        df2 = self.df2.drop(columns=['sector', 'localAuthority'])
         data = pd.concat([df1, df2], ignore_index=True, axis=0)
         
         X = data[data['postcode']==postcode].drop(columns='postcode')
