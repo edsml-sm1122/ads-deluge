@@ -18,7 +18,7 @@ class LocalAuthorityModel:
         Parameters
         ----------
         method: str
-            Available option: 1 for KNeighborsClassifier       
+            Available option: 0 for KNeighborsClassifier       
         """
         self.X_train, self.X_test, self.y_train, self.y_test = self.load_data(path)
         self.model = self.create_pipeline(method)
