@@ -6,7 +6,10 @@ import numpy as np
 import pandas as pd
 
 from .geo import *
+from .flood_prob import *
 
+# import geo
+# import flood_prob
 
 __all__ = ['Tool']
 
@@ -119,12 +122,16 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_flood_class_from_postcode method.
         """
-        return {'all_zero_risk': 0}
+        dicti_method = {'KNNClassifier':0,
+                        'RandomForestClassifier':1,
+                        'SVC':2
+                       }
+        return dicti_method
 
     def get_flood_class_from_postcodes(self, postcodes, method=0):
         """
         Generate series predicting flood probability classification
-        for a collection of poscodes.
+        for a collection of postcodes.
 
         Parameters
         ----------
@@ -144,11 +151,26 @@ class Tool(object):
         """
 
         if method == 0:
-            return pd.Series(data=np.ones(len(postcodes), int),
-                             index=np.asarray(postcodes),
-                             name='riskLabel')
+            selected_method = 'KNN'
+        elif method == 1:
+            selected_method = 'RandomForest'
+        elif method == 2:
+            selected_method = 'SVC'
         else:
-            raise NotImplementedError
+            raise IndexError('Method should be between 0 and 2')
+        
+        model = FloodProbModel(selected_method)
+        model.train_model()
+        
+        if isinstance(postcodes, str):
+            X_fetched = model.get_X(postcodes)
+        else:
+            X = []
+            for i in postcodes:
+                X.append(model.get_X(i))
+            X_fetched = pd.concat(X, ignore_index=True, axis=0)
+        
+        return pd.Series(model.predict(X_fetched), index=[postcodes])
 
     @staticmethod
     def get_flood_class_from_locations_methods():
