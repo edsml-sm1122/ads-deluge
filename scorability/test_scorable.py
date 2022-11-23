@@ -6,8 +6,7 @@ import pandas as pd
 
 tool = flood_tool.Tool()
 tool.train()
-#POSTCODES = ['BH23 7AJ', 'RH20 3PH']
-POSTCODES = ['PO7 8PR', 'BN1 5PF']
+POSTCODES = ['BH23 7AJ', 'RH20 3PH']
 EASTINGS = [417997.0, 535049.0]
 NORTHINGS = [97342.0, 169939.0]
 
@@ -16,15 +15,15 @@ CLASS_METHODS = tool.get_flood_class_from_postcodes_methods()
 LCLASS_METHODS = tool.get_flood_class_from_locations_methods()
 LAUTH_METHODS = tool.get_local_authority_methods()
 
-# def test_get_easting_northing():
-#     """Check return type."""
-#     data = tool.get_easting_northing(POSTCODES)
-#     assert issubclass(type(data), pd.DataFrame)
+def test_get_easting_northing():
+    """Check return type."""
+    data = tool.get_easting_northing(POSTCODES)
+    assert issubclass(type(data), pd.DataFrame)
 
-# def test_get_lat_long():
-#     """Check return type."""
-#     data = tool.get_lat_long(POSTCODES)
-#     assert issubclass(type(data), pd.DataFrame)
+def test_get_lat_long():
+    """Check return type."""
+    data = tool.get_lat_long(POSTCODES)
+    assert issubclass(type(data), pd.DataFrame)
 
 def test_get_flood_class_from_postcodes():
     """Check return types."""
@@ -32,23 +31,23 @@ def test_get_flood_class_from_postcodes():
         data = tool.get_flood_class_from_postcodes(POSTCODES, method)
         assert issubclass(type(data), pd.Series)
 
-# def test_get_flood_class_from_OSGB36_locationss():
-#     """Check return types."""
-#     for method in LCLASS_METHODS.values():
-#         data = tool.get_flood_class_from_OSGB36_locations(EASTINGS, NORTHINGS, method)
-#         assert issubclass(type(data), pd.Series)
+def test_get_flood_class_from_OSGB36_locationss():
+    """Check return types."""
+    for method in LCLASS_METHODS.values():
+        data = tool.get_flood_class_from_OSGB36_locations(EASTINGS, NORTHINGS, method)
+        assert issubclass(type(data), pd.Series)
 
-# def test_get_median_house_price_estimate():
-#     """Check return type."""
-#     for method in PRICE_METHODS.values():
-#         data = tool.get_median_house_price_estimate(POSTCODES, method)
-#         assert issubclass(type(data), pd.Series)
+def test_get_median_house_price_estimate():
+    """Check return type."""
+    for method in PRICE_METHODS.values():
+        data = tool.get_median_house_price_estimate(POSTCODES, method)
+        assert issubclass(type(data), pd.Series)
 
-# def test_get_local_authority_estimate():
-#     """Check return type."""
-#     for method in LAUTH_METHODS.values():
-#         data = tool.get_local_authority_estimate(EASTINGS, NORTHINGS, method)
-#         assert issubclass(type(data), pd.Series)
+def test_get_local_authority_estimate():
+    """Check return type."""
+    for method in LAUTH_METHODS.values():
+        data = tool.get_local_authority_estimate(EASTINGS, NORTHINGS, method)
+        assert issubclass(type(data), pd.Series)
 
 SCORES = np.array([[100, 80, 60, 60, 30, 0, -30, -600, -1800, -2400],
                    [80, 100, 80, 90, 60, 30, 0, -300, -1200, -1800],
