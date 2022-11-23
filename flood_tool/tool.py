@@ -324,11 +324,8 @@ class Tool(object):
 
     def get_local_authority_estimate(self, postcodes, method=0):
         east_north_df = get_easting_northing(self, postcodes)
-        eastings = east_north_df[:,0]
-        northings = east_north_df[:,1]
-       
-
-        get_local_authority_estimate(self, eastings, northings, method=0)
+        eastings = east_north_df['eastings']
+        northings = east_north_df['northings']
         
         if method == 0:
             return pd.Series(data=np.full(len(eastings), 'Unknown'),
