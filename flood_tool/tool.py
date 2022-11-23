@@ -391,9 +391,8 @@ class Tool(object):
         pandas.Series
             Series of total annual flood risk estimates indexed by locations.
         """
+        risk = []
+        total_value = get_total_value(postcodes)
+        
 
-        risk_labels = risk_labels or self.get_flood_class(postcodes)
-
-        cost = self.get_total_value(risk_labels.index)
-
-        raise NotImplementedError
+        return
