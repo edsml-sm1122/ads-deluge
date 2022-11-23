@@ -244,7 +244,7 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_median_house_price_estimate method.
         """
-        return {'all_england_median': 0}
+        return {'all_england_median': 0, 'KNN':1}
 
     def get_median_house_price_estimate(self, postcodes, method=0):
         """
@@ -273,9 +273,8 @@ class Tool(object):
                              index=np.asarray(postcodes),
                              name='medianPrice')
         else:
-            median_price_model = MedianPriceModel('resources/postcodes_sampled.csv', method)
-            median_price_pred = median_price_model.predict(postcodes=postcodes)
-            return median_price_pred
+            model = MedianPriceModel(method)
+            return model.predict(postcodes)
 
     @staticmethod
     def get_local_authority_methods():
