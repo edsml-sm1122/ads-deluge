@@ -22,7 +22,7 @@ class LocalAuthorityModel:
         #Define the target and the features used to do the prediction
         y = data.localAuthority
         print(y.shape)
-        X = data[['easting', 'northing']]
+        X = data[['easting','northing']]
         print(X.shape)
 
         #Encode target
@@ -48,12 +48,16 @@ class LocalAuthorityModel:
 
         return search.best_estimator_
 
-    def predict(self, eastings, northings):
-        new_samples = pd.DataFrame([eastings, northings], index=['easting', 'northing']).T
+    def predict(self, postcodes):
+        new_samples = pd.DataFrame([postcodes], index=['easting','northing']).T
         print(new_samples)
         pred = self.model.predict(new_samples)
 
         return pd.Series(pred, index=[(est, nth) for est, nth in
-                                    zip(eastings, northings)],
+                                    zip('easting','northing')],
                              name='localAuthority')
 
+
+
+
+    

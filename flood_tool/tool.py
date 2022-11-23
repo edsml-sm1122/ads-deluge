@@ -322,6 +322,31 @@ class Tool(object):
             local_authority_pred = local_authority_model.predict(eastings=eastings, northings=northings)
             return local_authority_pred
 
+    def get_local_authority_estimate(self, postcodes, method=0):
+        east_north_df = get_easting_northing(self, postcodes)
+        eastings = east_north_df[:,0]
+        northings = east_north_df[:,1]
+       
+
+        get_local_authority_estimate(self, eastings, northings, method=0)
+        
+        if method == 0:
+            return pd.Series(data=np.full(len(eastings), 'Unknown'),
+                             index=[(est, nth) for est, nth in
+                                    zip(eastings, northings)],
+                             name='localAuthority')
+        else:
+            local_authority_model = LocalAuthorityModel('resources/postcodes_sampled.csv', method)
+            local_authority_pred = local_authority_model.predict(postcodes=postcodes)
+            return local_authority_pred
+
+    def get_easting_northing(self, postcodes):
+            frame = self.postcodedb.copy()
+            frame = frame.set_index('postcode')
+
+            return frame.loc[postcodes, ['easting', 'northing']]
+
+
     def get_total_value(self, postal_data):
         """
         Return a series of estimates of the total property values
