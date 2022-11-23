@@ -157,6 +157,7 @@ class FloodProbModel:
         df1 = self.df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
         df2 = self.df2.drop(columns=['sector', 'localAuthority'])
         data = pd.concat([df1, df2], ignore_index=True, axis=0)
+        data.drop_duplicates(inplace=True)
         
         X = data[data['postcode']==postcode].drop(columns='postcode')
         return X
