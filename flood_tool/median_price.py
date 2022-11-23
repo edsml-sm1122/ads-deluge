@@ -29,10 +29,8 @@ class MedianPriceModel:
         # Convert prices to log
         df['logPrice'] = np.log(df.medianPrice)
         
-        # Split data geographically and make X and Y
-        idx=int(len(df)*0.7)
-        train_set = df.sort_values(by='easting').reset_index().iloc[:idx]
-        test_set = df.sort_values(by='easting').reset_index().iloc[idx:]
+        # Split and make X and Y
+        train_set, test_set = train_test_split(df, test_size=0.3)
         X_train = train_set.drop(['riskLabel','medianPrice','logPrice'],axis=1)
         X_test = test_set.drop(['riskLabel','medianPrice','logPrice'],axis=1)
         y_train = train_set['logPrice']
