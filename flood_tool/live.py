@@ -37,4 +37,8 @@ def get_live_station_data(filename, station_reference):
 
     >>> data = get_live_station_data('0184TH')
     """
-    return NotImplemented
+    frame=pd.read_csv(filename)
+    frame=frame.loc[frame.stationReference==station_reference]
+    url='https://environment.data.gov.uk/flood-monitoring/id/stations/'+station_reference
+    dfurl=pd.read_json(url)
+    return pd.to_numeric(dfurl.loc['measures']['items']['latestReading']['value'])
