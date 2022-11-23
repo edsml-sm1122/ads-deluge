@@ -7,9 +7,8 @@ import pandas as pd
 from .median_price import *
 from .geo import *
 from .flood_prob import *
+from .local_authority import *
 
-# import geo
-# import flood_prob
 
 __all__ = ['Tool']
 
@@ -312,11 +311,11 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_altitude_estimate method.
         """
-        return {'Do Nothing': 0}
+        return {'Do Nothing': 0, 'K-Neighbors': 1}
 
     def get_local_authority_estimate(self, eastings, northings, method=0):
         """
-        Generate series predicting local authorities in m for a sequence
+        Generate series predicting local authorities for a sequence
         of OSGB36 locations.
 
         Parameters
@@ -328,14 +327,14 @@ class Tool(object):
             Sequence of OSGB36 northings.
         method : int (optional)
             optionally specify (via a value in
-            self.get_altitude_methods) the regression
+            self.get_local_authority_methods) the classification
             method to be used.
 
         Returns
         -------
 
         pandas.Series
-            Series of altitudes indexed by postcodes.
+            Series of local authorities indexed by eastings and northings.
         """
 
         if method == 0:
@@ -343,8 +342,40 @@ class Tool(object):
                              index=[(est, nth) for est, nth in
                                     zip(eastings, northings)],
                              name='localAuthority')
+        elif method == 1:
+            filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+            local_authority_model = LocalAuthorityModel(filepath1, method)
+            local_authority_pred = local_authority_model.predict(eastings, northings)
+            return local_authority_pred
         else:
-            raise NotImplementedError
+            raise IndexError('Method should be either 0 or 1')
+
+    def get_local_authority_estimate_postcodes(self, postcodes, method=0):
+        """
+        Generate series predicting local authorities for a sequence
+        of postcodes
+
+        Parameters
+        ----------
+
+        postcodes: sequence of strings
+        method : int (optional)
+            optionally specify (via a value in
+            self.get_local_authority_methods) the classification
+            method to be used.
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of local authorities indexed by postcodes.
+        """
+        east_north_df = get_easting_northing(self, postcodes)
+        eastings = east_north_df['eastings']
+        northings = east_north_df['northings']
+    
+        local_auth_east_north =  get_local_authority_estimate(eastings,northings,method=method)
+        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing'])
 
     def get_total_value(self, postal_data):
         """
