@@ -58,12 +58,11 @@ class LocalAuthorityModel:
 
         #Define the target and the features used to do the prediction
         y = data.localAuthority
-        print(y.shape)
         X = data[['easting','northing']]
-        print(X.shape)
 
         #Encode target
-        y = LabelEncoder().fit_transform(y)
+        self.label_encoder = LabelEncoder()
+        y = self.label_encoder.fit_transform(y)
 
         return train_test_split(X, y, train_size=0.8)
 
@@ -82,7 +81,7 @@ class LocalAuthorityModel:
             selected classifier model
         """
 
-        method_dict = {1: KNeighborsClassifier()}
+        method_dict = {0: KNeighborsClassifier()}
         pipe = Pipeline([
             ('scaler', None),
             ('model', method_dict[method])
@@ -131,13 +130,13 @@ class LocalAuthorityModel:
         >>> local_authority_pred = local_authority_model.predict(eastings, northings)
         """
         new_samples = pd.DataFrame([eastings, northings], index=['easting','northing']).T
-        print(new_samples)
-        pred = self.model.predict(new_samples)
-        print(pred)
 
-        return pd.Series(pred, index=[(est, nth) for est, nth in
-                                    zip(eastings,northings)],
-                             name='localAuthority')
+        pred = self.model.predict(new_samples)
+        pred = self.label_encoder.inverse_transform(pred)
+
+        index = pd.MultiIndex.from_tuples([(est, nth) for est, nth in zip(eastings,northings)])
+
+        return pd.Series(pred, index=index,name='localAuthority')
 
 
 
