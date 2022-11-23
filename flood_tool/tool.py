@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 import pandas as pd
-
+from .median_price import *
 from .geo import *
 
 
@@ -273,7 +273,9 @@ class Tool(object):
                              index=np.asarray(postcodes),
                              name='medianPrice')
         else:
-            raise NotImplementedError
+            median_price_model = MedianPriceModel('resources/postcodes_sampled.csv', method)
+            median_price_pred = median_price_model.predict(postcodes=postcodes)
+            return median_price_pred
 
     @staticmethod
     def get_local_authority_methods():
