@@ -479,7 +479,7 @@ class Tool(object):
                           8:3, 9:4, 10:5}
         risk = []
         total_value = self.get_total_value(postcodes)
-        flood_class = self.get_flood_class_from_postcodes(self, postcodes)
+        flood_class = self.get_flood_class_from_postcodes(postcodes)
         
         for l, m in zip(total_value, flood_class):
             r = 0.05 * l * flood_prob_dic[m]/100   #/100 for percent
