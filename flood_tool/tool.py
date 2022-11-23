@@ -370,11 +370,11 @@ class Tool(object):
         pandas.Series
             Series of local authorities indexed by postcodes.
         """
-        east_north_df = get_easting_northing(self, postcodes)
+        east_north_df = self.get_easting_northing(self, postcodes)
         eastings = east_north_df['eastings']
         northings = east_north_df['northings']
     
-        local_auth_east_north =  get_local_authority_estimate(eastings,northings,method=method)
+        local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
         return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing']) 
 
     def get_local_authority_estimate_latitude_longitude(self, phi, lam, method=0):
@@ -399,7 +399,8 @@ class Tool(object):
         """
         eastings, northings = get_easting_northing_from_gps_lat_long(self, phi, lam) 
 
-        return get_local_authority_estimate(eastings, northings, method=method)
+        local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
+        return local_auth_east_north.set_index((east, north) for east, north in zip(eastings, northings))
 
     def get_total_value(self, postal_data):
         """
