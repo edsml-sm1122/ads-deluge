@@ -6,7 +6,8 @@ import pandas as pd
 
 tool = flood_tool.Tool()
 tool.train()
-POSTCODES = ['BH23 7AJ', 'RH20 3PH']
+#POSTCODES = ['BH23 7AJ', 'RH20 3PH']
+POSTCODES = ['BN1 5PF', 'TN6 3AW']
 EASTINGS = [417997.0, 535049.0]
 NORTHINGS = [97342.0, 169939.0]
 
