@@ -133,7 +133,11 @@ class MedianPriceModel():
 
         if isinstance(postcodes, str):
             postcodes=[postcodes]
-        new_data = self.unlabelled_df.set_index('postcode').loc[postcodes].reset_index()
+        data1 = self.unlabelled_df
+        data2 = self.labelled_df.drop(columns=['riskLabel', 'medianPrice'])
+        new_data = pd.concat([data1, data2])
+        new_data.drop_duplicates(inplace=True)
+        new_data = new_data.set_index('postcode').loc[postcodes].reset_index()
         loaded_model = pickle.load(open('finalised_model.sav', 'rb'))
         y_pred = loaded_model.predict(new_data)
         pred = np.exp(y_pred)
