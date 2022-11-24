@@ -80,7 +80,6 @@ class FloodProbModel:
         KNeighborsClassifier(), 0.752106
         """
 
-        print(self.df_postcodes_sampled.head())
         y_train = self.df_postcodes_sampled['riskLabel']
         X_train = self.df_postcodes_sampled.drop(columns=['postcode', 'sector', 'localAuthority', 'riskLabel', 'medianPrice'])
 
