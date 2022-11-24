@@ -47,7 +47,8 @@ class MedianPriceModel:
 
         # Transform columns
         num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', RobustScaler())])
-        cat_pipe = Pipeline([('imputer', SimpleImputer(strategy='most_frequent')), ('encoder', OneHotEncoder(handle_unknown='ignore', sparse=False))])
+        cat_pipe = Pipeline([('imputer', SimpleImputer(strategy='most_frequent')),
+                             ('encoder', OneHotEncoder(handle_unknown='ignore', sparse=False))])
 
         preproc = ColumnTransformer([
             ('num_pipe', num_pipe, ['easting','northing','altitude']),
@@ -63,6 +64,10 @@ class MedianPriceModel:
         'model__algorithm':['auto', 'ball_tree', 'kd_tree', 'brute'], 'model__p':[1,2]}
 
         cv = GridSearchCV(self.model, scoring='neg_root_mean_squared_error', param_grid=param_grid, cv=5, n_jobs=-1)
+        # this is what makes the function takes so long to run
+        # we dont need to perform the CV here, since the dataset is static we can just try the CV on notebook
+        # and pass the best params here
+        # cc: farah and emilia
         cv.fit(self.X_train, self.y_train)
 
         return cv.best_estimator_
