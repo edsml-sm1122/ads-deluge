@@ -80,6 +80,7 @@ class MedianPriceModel():
         return X_train, X_test, y_train, y_test
     
 
+
     def train_model(self):
         """
         Train model on training data.

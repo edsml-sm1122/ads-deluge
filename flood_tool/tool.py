@@ -187,7 +187,11 @@ class Tool(object):
              get_flood_class_from_OSGB36_locations and
              get_flood_class_from_OSGB36_locations method.
         """
-        return {'all_zero_risk': 0}
+        dicti_method = {'KNNClassifier':0,
+                        'RandomForestClassifier':1,
+                        'SVC':2
+                       }
+        return dicti_method
 
     def get_flood_class_from_OSGB36_locations(self, eastings, northings, method=0):
         """
@@ -397,12 +401,48 @@ class Tool(object):
         pandas.Series
             Series of total property value estimates indexed by locations.
         """
+        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        df1 = pd.read_csv(filepath1).drop(columns=['riskLabel', 'medianPrice'])
+        df2 = pd.read_csv(filepath2)
+        data = pd.concat([df1, df2], ignore_index=True, axis=0)
+        data.drop_duplicates(inplace=True)
+        data = data['postcode']
+        
+        if isinstance(postal_data, str):# if a string is passed, instead of a sequence
+            postal_data = [postal_data] # we change the postal_data to be a 1 member list
+        
+        final_postcode_list = []
+        n_house_list = []
+        for p in postal_data:
+            for i in data:
+                if p in i:
+                    final_postcode_list.append(i)
+        median_series = self.get_median_house_price_estimate(final_postcode_list)
+        
+        filepath3 = os.sep.join((os.path.dirname(__file__), 'resources', 'households_per_sector.csv'))
+        df_house = pd.read_csv(filepath3)
+        df_house['HouseNumber'] = df_house['households'] / df_house['number of postcode units']
+        
+        counter = 0 # it turns out that postcode sector column in the file doesnt cover all the postcode
+                    # so we will append 0 to n_house_list if house number is not found in the household file
+        for j in final_postcode_list:
+            for k in range(len(df_house)):
+                if df_house['postcode sector'].iloc[k] in j:
+                    n_house_list.append(df_house['HouseNumber'].iloc[k])
+            counter += 1
+            if len(n_house_list) < counter:
+                n_house_list.append(0)
+        
+        df_final = pd.DataFrame(data=median_series)
+        df_final['nb_houses'] = n_house_list
+        df_final['total_value'] = df_final['medianPrice'] * df_final['nb_houses']
+        
+        return df_final['total_value']   
 
-        raise NotImplementedError
-
-    def get_annual_flood_risk(self, postcodes,  risk_labels=None):
+    def get_annual_flood_risk(self, postcodes, risk_labels=None):
         """
-        Return a series of estimates of the total property values of a
+        Return a series of annual flood risk of a
         collection of postcodes.
 
         Risk is defined here as a damage coefficient multiplied by the
@@ -423,13 +463,21 @@ class Tool(object):
         pandas.Series
             Series of total annual flood risk estimates indexed by locations.
         """
-
-        risk_labels = risk_labels or self.get_flood_class(postcodes)
-
-        cost = self.get_total_value(risk_labels.index)
-
-        raise NotImplementedError
+        if isinstance(postcodes, str):
+            postcodes = [postcodes]
         
+        flood_prob_dic = {1:0.01, 2:0.05, 3:0.1, 
+                          4:0.5, 5:1, 6:1.5, 7:2, 
+                          8:3, 9:4, 10:5}
+        risk = []
+        total_value = Tool.get_total_value(self, postcodes)
+        flood_class = Tool.get_flood_class_from_postcodes(self, postcodes)
+        
+        for l, m in zip(total_value, flood_class):
+            r = 0.05 * l * flood_prob_dic[m]/100   #/100 for percent
+            risk.append(r)
+
+        return pd.Series(risk, index=postcodes)
         
     def get_postcode_from_OSGB36(self, eastings, northings):
         """
@@ -479,3 +527,4 @@ class Tool(object):
         index = pd.MultiIndex.from_tuples(ser_index)
         
         return pd.Series(postcodes, index=index)
+
