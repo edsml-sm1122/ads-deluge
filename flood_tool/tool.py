@@ -71,7 +71,7 @@ class Tool(object):
         self.model_median_price = MedianPriceModel(labelled_data=self.postcode_sampled_file, unlabelled_data=self.postcode_unlabelled_file, method=1)
 
         # init and train LocalAuthority model
-        self.model_local_authority = LocalAuthorityModel(self.postcode_sampled_file, method=1)
+        self.model_local_authority = LocalAuthorityModel(self.postcode_sampled_file, method=0)
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -91,7 +91,7 @@ class Tool(object):
             by the input postcodes. Invalid postcodes (i.e. not in the
             input unlabelled postcodes file) return as NaN.
          """
-
+         
         frame = self.postcodedb.copy()
         frame = frame.set_index('postcode')
 
@@ -287,7 +287,7 @@ class Tool(object):
             Series of median house price estimates indexed by postcodes.
         """
         if isinstance(postcodes, str):
-                postcodes=[postcodes]
+            postcodes=[postcodes]
         if method == 0:
             return pd.Series(data=np.full(len(postcodes), 245000.0),
                              index=np.asarray(postcodes),
@@ -312,7 +312,7 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_altitude_estimate method.
         """
-        return {'Do Nothing': 0, 'K-Neighbors': 1}
+        return {'K-Neighbors': 0}
 
     def get_local_authority_estimate(self, eastings, northings, method=0):
         """
@@ -339,16 +339,11 @@ class Tool(object):
         """
 
         if method == 0:
-            return pd.Series(data=np.full(len(eastings), 'Unknown'),
-                            index=[(est, nth) for est, nth in
-                                    zip(eastings, northings)],
-                            name='localAuthority')
-        elif method == 1:
-            
             local_authority_pred = self.model_local_authority.predict(eastings, northings)
+            
             return local_authority_pred
         else:
-            raise IndexError('Method should be either 0 or 1')
+            raise IndexError('Method should be 0')
 
     def get_local_authority_estimate_postcodes(self, postcodes, method=0):
         """
@@ -370,12 +365,12 @@ class Tool(object):
         pandas.Series
             Series of local authorities indexed by postcodes.
         """
-        east_north_df = self.get_easting_northing(self, postcodes)
-        eastings = east_north_df['eastings']
-        northings = east_north_df['northings']
+        east_north_df = self.get_easting_northing(postcodes)
+        eastings = east_north_df['easting']
+        northings = east_north_df['northing']
     
         local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
-        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing']) 
+        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['level_0','level_1']) 
 
     def get_local_authority_estimate_latitude_longitude(self, phi, lam, method=0):
         """
@@ -397,10 +392,10 @@ class Tool(object):
         pandas.Series
             Series of local_authority.
         """
-        eastings, northings = get_easting_northing_from_gps_lat_long(self, phi, lam) 
+        eastings, northings = get_easting_northing_from_gps_lat_long(phi, lam) 
 
         local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
-        return local_auth_east_north.set_index((east, north) for east, north in zip(eastings, northings))
+        return local_auth_east_north.reset_index().set_index((east, north) for east, north in zip(eastings, northings)).drop(columns=['level_0','level_1'])
 
     def get_total_value(self, postal_data):
         """
@@ -490,14 +485,76 @@ class Tool(object):
                           4:0.5, 5:1, 6:1.5, 7:2, 
                           8:3, 9:4, 10:5}
         risk = []
-        total_value = Tool.get_total_value(self, postcodes)
-        flood_class = Tool.get_flood_class_from_postcodes(self, postcodes)
+        total_value = self.get_total_value(postcodes)
+        flood_class = self.get_flood_class_from_postcodes(postcodes)
         
         for l, m in zip(total_value, flood_class):
             r = 0.05 * l * flood_prob_dic[m]/100   #/100 for percent
             risk.append(r)
 
         return pd.Series(risk, index=postcodes)
+
+    def get_annual_flood_risk_from_WGS84(self, latitudes, longitudes, risk_labels=None):
+        """
+        Return a series of annual flood risk of a
+        collection of latitudes and longitudes.
+
+        Risk is defined here as a damage coefficient multiplied by the
+        value under threat multiplied by the probability of an event.
+
+        Parameters
+        ----------
+
+        latitudes : sequence of strs
+            Sequence of latitudes.
+        longitudes : sequence of strs
+            Sequence of longitudes.
+        risk_labels: pandas.Series (optional)
+            Series containing flood risk classifiers, as
+            predicted by get_flood_class_from_WGS84_locations
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of total annual flood risk estimates indexed by locations.
+        """
+        # eastings, northings = get_easting_northing_from_gps_lat_long(latitudes, longitudes)
+        # flood_risk_df = self.get_annual_flood_risk_from_OSGB36(eastings, northings)
+        postcodes_df = self.get_postcodes_from_WGS84(latitudes, longitudes)
+        flood_risk_df = self.get_annual_flood_risk(postcodes_df)
+
+        return flood_risk_df#.reset_index().set_index((lat, long) for lat, long in zip(latitudes, longitudes))#.drop(columns=['postcodes'])
+
+    def get_annual_flood_risk_from_OSGB36(self, eastings, northings, risk_labels=None):
+        """
+        Return a series of annual flood risk of a
+        collection of eastings and northings.
+
+        Risk is defined here as a damage coefficient multiplied by the
+        value under threat multiplied by the probability of an event.
+
+        Parameters
+        ----------
+
+        eastings : sequence of strs
+            Sequence of eastings.
+        northings : sequence of strs
+            Sequence of northings.
+        risk_labels: pandas.Series (optional)
+            Series containing flood risk classifiers, as
+            predicted by get_flood_class_from_WGS84_locations
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of total annual flood risk estimates indexed by locations.
+        """
+        postcodes_df = self.get_postcode_from_OSGB36(eastings, northings)
+        flood_risk_df = self.get_annual_flood_risk(postcodes_df)
+
+        return flood_risk_df.reset_index().set_index((east, north) for east, north in zip(eastings, northings)).drop(columns=['index']) 
         
     def get_postcode_from_OSGB36(self, eastings, northings):
         """
@@ -547,4 +604,27 @@ class Tool(object):
         index = pd.MultiIndex.from_tuples(ser_index)
         
         return pd.Series(postcodes, index=index)
+
+    def get_postcodes_from_WGS84(self, latitudes, longitudes):
+        """
+        Generate series with nearest postcode
+        for a collection of WGS84_locations.
+
+        Parameters
+        ----------
+
+        latitudes : sequence of floats
+            Sequence of WGS84 latitude.
+        northings : sequence of floats
+            Sequence of WGS84 longitude.
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of postcodes with latitude, longitude pair as multi-index.
+        """
+        eastings, northings = get_easting_northing_from_gps_lat_long(latitudes, longitudes)
+        postcode_df = self.get_postcode_from_OSGB36(eastings, northings)
+        return postcode_df.reset_index().set_index((lat, long) for lat, long in zip(latitudes, longitudes)).drop(columns=['level_0','level_1'])[0]
 
