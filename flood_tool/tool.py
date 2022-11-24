@@ -16,7 +16,7 @@ __all__ = ['Tool']
 class Tool(object):
     """Class to interact with a postcode database file."""
 
-    def __init__(self, postcode_file='', sample_labels='', household_file=''):
+    def __init__(self, postcode_unlabelled='', sample_labels='', household_file=''):
 
         """
         Parameters
@@ -31,26 +31,28 @@ class Tool(object):
             by postcode.
         """
 
-        if postcode_file == '':
-            full_postcode_file = os.sep.join((os.path.dirname(__file__),
+        if postcode_unlabelled == '':
+            self.postcode_unlabelled_file = os.sep.join((os.path.dirname(__file__),
                                          'resources',
                                          'postcodes_unlabelled.csv'))
+        elif postcode_unlabelled != '':
+            self.postcode_unlabelled_file = postcode_unlabelled
 
         if sample_labels == '':
-            sample_labels_file = os.sep.join((os.path.dirname(__file__),
+            self.postcode_sampled_file = os.sep.join((os.path.dirname(__file__),
                                          'resources',
                                          'postcodes_sampled.csv'))
+        elif sample_labels != '':
+            self.postcode_sampled_file = sample_labels
 
         if household_file == '':
-            household_file = os.sep.join((os.path.dirname(__file__),
+            self.household_file = os.sep.join((os.path.dirname(__file__),
                                           'resources',
                                           'households_per_sector.csv'))
+        elif household_file != '':
+            self.household_file = household_file
 
-        self.postcodedb = pd.read_csv(full_postcode_file)
-        self.postcodelabelled = pd.read_csv(sample_labels_file)
-        self.householddb = pd.read_csv(household_file)
-
-    def train(self, labelled_samples=''):
+    def train(self):
         """Train the model using a labelled set of samples.
         
         Parameters
@@ -60,7 +62,7 @@ class Tool(object):
             Filename of a .csv file containing a labelled set of samples.
         """
 
-        self.model_flood = [FloodProbModel(selected_method=method) for method in self.get_flood_class_from_postcodes_methods().values()]
+        self.model_flood = [FloodProbModel(postcode_file=self.postcode_sampled_file, postcode_prediction_file=self.postcode_unlabelled_file, selected_method=method) for method in self.get_flood_class_from_postcodes_methods().values()]
         for model in self.model_flood:
             model.train_model()
 

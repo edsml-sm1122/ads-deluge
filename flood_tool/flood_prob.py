@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.metrics import accuracy_score
 from xgboost import XGBRegressor
@@ -18,7 +17,7 @@ from imblearn.over_sampling import SMOTE
 class FloodProbModel:
     """ Class for training selected model and predicting flood probability."""
     
-    def __init__(self, selected_method=0):
+    def __init__(self, postcode_file='', postcode_prediction_file='', selected_method=0):
         """
         Define a classifier model.
         
@@ -28,10 +27,6 @@ class FloodProbModel:
             Available option: 'KNN' for KNeighborsClassifier, 'RandomForest' for
             RandomForestClassifier, 'SVC' for Support Vector Classifier
         """
-        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
-        self.df1 = pd.read_csv(filepath1)
-        self.df2 = pd.read_csv(filepath2)
         
         self.models_dic = {0:RandomForestRegressor(max_features=8, n_estimators=189, oob_score=True),
                       1:KNeighborsRegressor(n_neighbors=10),
@@ -44,8 +39,21 @@ class FloodProbModel:
             self.model = self.models_dic[selected_method]
         else:
             raise IndexError('Method should be between 0 and 6')
+
+        if postcode_file == '':
+            filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+            self.df_postcodes_sampled = pd.read_csv(filepath1)
+        elif postcode_file != '':
+            self.df_postcodes_sampled = pd.read_csv(postcode_file)
+
+        if postcode_prediction_file == '':
+            filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+            self.df_postcodes_unlabelled = pd.read_csv(filepath2)
+        elif postcode_prediction_file != '':
+            self.df_postcodes_unlabelled = pd.read_csv(postcode_prediction_file)
         
-    def train_model(self, oversample=False, accuracy_scoring=False):
+        
+    def train_model(self, oversample=False):
         """
         Return trained model (using postcode_sampled.csv, training set) 
         and, if accuracy_scoring is set True, accuracy score (using test set) 
@@ -72,20 +80,16 @@ class FloodProbModel:
         KNeighborsClassifier(), 0.752106
         """
 
-        y = self.df1.riskLabel
-        X = self.df1.drop(columns=['postcode', 'sector', 'localAuthority', 'riskLabel', 'medianPrice'])
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, random_state=42)
+        print(self.df_postcodes_sampled.head())
+        y_train = self.df_postcodes_sampled['riskLabel']
+        X_train = self.df_postcodes_sampled.drop(columns=['postcode', 'sector', 'localAuthority', 'riskLabel', 'medianPrice'])
 
         preproc = ColumnTransformer([
             ('num_transformer', MinMaxScaler(), X_train.select_dtypes(include=np.number).columns),
             ('cat_transformer', OneHotEncoder(sparse=False), X_train.select_dtypes(exclude=np.number).columns)
         ])
         self.preproc = preproc
-
-        self.preproc.fit(X_train)
-        X_train = self.preproc.transform(X_train)
-        X_test = self.preproc.transform(X_test)
+        X_train = self.preproc.fit_transform(X_train)
         
         if oversample is True: 
            sm = SMOTE(k_neighbors=5,random_state = 42) 
@@ -93,12 +97,8 @@ class FloodProbModel:
            X_train, y_train = X_train_res, y_train_res
         
         self.model.fit(X_train, y_train)
-        y_pred = self.model.predict(X_test)
         
-        if accuracy_scoring is True:
-            return(self.model, accuracy_score(y_test, y_pred))
-        else:
-            return self.model
+        return self.model
         
     def predict(self, X_input):
         """
@@ -160,8 +160,8 @@ class FloodProbModel:
         0  469395.0  108803.0  30        Planosols
         """
     
-        df1 = self.df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
-        df2 = self.df2.drop(columns=['sector', 'localAuthority'])
+        df1 = self.df_postcodes_sampled.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
+        df2 = self.df_postcodes_unlabelled.drop(columns=['sector', 'localAuthority'])
         data = pd.concat([df1, df2], ignore_index=True, axis=0)
         data.drop_duplicates(inplace=True)
         
