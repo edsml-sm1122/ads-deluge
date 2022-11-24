@@ -30,13 +30,13 @@ class FloodProbModel:
             data for postcodes.
 
         selected_method: int, optional
-            Available option: 0 for RandomForestRegressor, 1 for KNeighborsRegressor, 
+            Available option: 0 for RandomForestRegressor, 1 for KNeighborsRegressor
         """
         
         self.models_dic = {0:RandomForestRegressor(max_features=8, n_estimators=189, oob_score=True),
                            1:KNeighborsRegressor(n_neighbors=10)}
         
-        if selected_method>=0 and selected_method<=6:
+        if selected_method==0 or selected_method==1:
             self.model = self.models_dic[selected_method]
         else:
             raise IndexError('Method should be 0 or 1')
