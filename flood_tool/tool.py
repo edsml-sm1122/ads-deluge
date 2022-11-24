@@ -432,7 +432,7 @@ class Tool(object):
         
     def get_postcode_from_OSGB36(self, eastings, northings):
         """
-        Generate series defining postcode (using K-Neighbors)
+        Generate series with nearest postcode
         for a collection of OSGB36_locations.
 
         Parameters
