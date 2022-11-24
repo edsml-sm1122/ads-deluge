@@ -9,6 +9,7 @@ from pytest import mark
 from flood_tool import median_price
 
 tool = flood_tool.Tool()
+tool.train()
 median_price_model = median_price.MedianPriceModel(method=1)
 
 POSTCODES = ['BN1 5PF', 'TN6 3AW']

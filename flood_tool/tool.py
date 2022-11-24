@@ -22,9 +22,13 @@ class Tool(object):
         Parameters
         ----------
 
-        full_postcode_file : str, optional
+        postcode_unlabelled : str, optional
             Filename of a .csv file containing geographic location
             data for postcodes.
+
+        sample_labels : str, optional
+            Filename of a .csv file containing geographic location
+            data for postcodes with labelled risklevel and medianprice.
 
         household_file : str, optional
             Filename of a .csv file containing information on households
@@ -52,20 +56,22 @@ class Tool(object):
         elif household_file != '':
             self.household_file = household_file
 
-    def train(self):
-        """Train the model using a labelled set of samples.
-        
-        Parameters
-        ----------
-        
-        labelled_samples : str, optional
-            Filename of a .csv file containing a labelled set of samples.
-        """
+        self.postcodedb = pd.concat([pd.read_csv(self.postcode_unlabelled_file),pd.read_csv(self.postcode_sampled_file)], ignore_index=True, axis=0)
+        self.postcodedb.drop_duplicates(inplace=True)
 
+    def train(self):
+        """Train all models that can be used by giving a labelled set of samples."""
+
+        # init and train flood model
         self.model_flood = [FloodProbModel(postcode_file=self.postcode_sampled_file, postcode_prediction_file=self.postcode_unlabelled_file, selected_method=method) for method in self.get_flood_class_from_postcodes_methods().values()]
         for model in self.model_flood:
             model.train_model()
 
+        # init and train MedianPrice model
+        self.model_median_price = MedianPriceModel(labelled_data=self.postcode_sampled_file, unlabelled_data=self.postcode_unlabelled_file, method=1)
+
+        # init and train LocalAuthority model
+        self.model_local_authority = LocalAuthorityModel(self.postcode_sampled_file, method=0)
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -118,7 +124,7 @@ class Tool(object):
     @staticmethod
     def get_flood_class_from_postcodes_methods():
         """
-        Get a dictionary of available flood probablity classification methods
+        Get a dictionary of available flood probablity regression methods
         for postcodes.
 
         Returns
@@ -130,11 +136,8 @@ class Tool(object):
              get_flood_class_from_postcode method.
         """
         models_dic = {'RandomForestRegressor':0,
-                      'KNeighborsRegressor':1,
-                      'XGBRegressor':2,
-                      'GradientBoostingRegressor':3,
-                      'BaggingRegressor':4,
-                      'MLPRegressor':5}
+                      'KNeighborsRegressor':1}
+
         return models_dic
 
     def get_flood_class_from_postcodes(self, postcodes, method=0):
@@ -145,7 +148,7 @@ class Tool(object):
         Parameters
         ----------
 
-        postcodes : sequence of strs
+        postcodes : sequence of strs or a str
             Sequence of postcodes.
         method : int (optional)
             optionally specify (via a value in
@@ -158,12 +161,14 @@ class Tool(object):
         pandas.Series
             Series of flood risk classification labels indexed by input postcodes.
         """
-        
-        # model = FloodProbModel(selected_method=method)
-        # model.train_model()
+        if isinstance(postcodes, str):
+            postcodes = list(postcodes)
+
+        if method!=0 and method!=1:
+            raise IndexError('Method should be either 0 or 1')
         model = self.model_flood[method]
         X_fetched = model.get_X(postcodes)
-        X_pred = pd.Series(model.predict(X_fetched), index=[postcodes])
+        X_pred = pd.Series(model.predict(X_fetched), index=postcodes)
         
         return X_pred
 
@@ -183,11 +188,8 @@ class Tool(object):
              get_flood_class_from_OSGB36_locations method.
         """
         models_dic = {'RandomForestRegressor':0,
-                      'KNeighborsRegressor':1,
-                      'XGBRegressor':2,
-                      'GradientBoostingRegressor':3,
-                      'BaggingRegressor':4,
-                      'MLPRegressor':5}
+                      'KNeighborsRegressor':1}
+
         return models_dic
 
     def get_flood_class_from_OSGB36_locations(self, eastings, northings, method=0):
@@ -286,8 +288,8 @@ class Tool(object):
                              index=np.asarray(postcodes),
                              name='medianPrice')
         elif method == 1:
-            model = MedianPriceModel()
-            return model.predict(postcodes)
+
+            return self.model_median_price.predict(postcodes)
         else:
             raise IndexError('Method should be either 0 or 1')
 
@@ -331,9 +333,8 @@ class Tool(object):
         """
 
         if method == 0:
-            filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-            local_authority_model = LocalAuthorityModel(filepath1, method)
-            local_authority_pred = local_authority_model.predict(eastings, northings)
+            local_authority_pred = self.model_local_authority.predict(eastings, northings)
+            
             return local_authority_pred
         else:
             raise IndexError('Method should be 0')
@@ -359,8 +360,8 @@ class Tool(object):
             Series of local authorities indexed by postcodes.
         """
         east_north_df = self.get_easting_northing(postcodes)
-        eastings = east_north_df['easting']
-        northings = east_north_df['northing']
+        eastings = east_north_df['easting'].tolist()
+        northings = east_north_df['northing'].tolist()
     
         local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
         return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['level_0','level_1']) 
@@ -512,12 +513,11 @@ class Tool(object):
         pandas.Series
             Series of total annual flood risk estimates indexed by locations.
         """
-        # eastings, northings = get_easting_northing_from_gps_lat_long(latitudes, longitudes)
-        # flood_risk_df = self.get_annual_flood_risk_from_OSGB36(eastings, northings)
+
         postcodes_df = self.get_postcodes_from_WGS84(latitudes, longitudes)
         flood_risk_df = self.get_annual_flood_risk(postcodes_df)
 
-        return flood_risk_df#.reset_index().set_index((lat, long) for lat, long in zip(latitudes, longitudes))#.drop(columns=['postcodes'])
+        return flood_risk_df.reset_index(name='flood_risk').set_index((lat, long) for lat, long in zip(latitudes, longitudes)).drop(columns=[0])
 
     def get_annual_flood_risk_from_OSGB36(self, eastings, northings, risk_labels=None):
         """
@@ -575,10 +575,8 @@ class Tool(object):
         if len(eastings) != len(northings):
             raise IndexError('Length of eastings and northings is not same!')
 
-        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
-        df1 = pd.read_csv(filepath1)
-        df2 = pd.read_csv(filepath2)
+        df1 = pd.read_csv(self.postcode_sampled_file)
+        df2 = pd.read_csv(self.postcode_unlabelled_file)
         df1 = df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
         df2 = df2.drop(columns=['sector', 'localAuthority'])
         data = pd.concat([df1, df2], ignore_index=True, axis=0)

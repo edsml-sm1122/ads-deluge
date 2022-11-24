@@ -8,6 +8,7 @@ from pytest import mark
 
 
 tool = flood_tool.Tool()
+tool.train()
 
 def test_get_easting_northing():
     """Check that correct easting/northing is outputted from the postcode"""

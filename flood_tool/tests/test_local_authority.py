@@ -11,6 +11,7 @@ from pytest import mark
 
 
 tool = flood_tool.Tool()
+tool.train()
 
 def test_estimate_local_authority():
     """Check that return type is a pd.Series and that its lenght is the same as input"""
@@ -18,7 +19,7 @@ def test_estimate_local_authority():
     data = tool.get_easting_northing(['BN1 5PF'])
     print(data)
 
-    local_authority_estimate = tool.get_local_authority_estimate(data.easting.tolist(), data.northing.tolist(), method=1)
+    local_authority_estimate = tool.get_local_authority_estimate(data.easting.tolist(), data.northing.tolist(), method=0)
 
     print(f'length of input: {len(data)}')
     print(f'lenght of output: {len(local_authority_estimate)}')
