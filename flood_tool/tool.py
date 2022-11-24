@@ -338,10 +338,10 @@ class Tool(object):
         """
 
         if method == 0:
-                return pd.Series(data=np.full(len(eastings), 'Unknown'),
-                                index=[(est, nth) for est, nth in
-                                        zip(eastings, northings)],
-                                name='localAuthority')
+            return pd.Series(data=np.full(len(eastings), 'Unknown'),
+                            index=[(est, nth) for est, nth in
+                                    zip(eastings, northings)],
+                            name='localAuthority')
         elif method == 1:
             filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
             local_authority_model = LocalAuthorityModel(filepath1, method)
