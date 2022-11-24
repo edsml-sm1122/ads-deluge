@@ -66,6 +66,7 @@ class Tool(object):
         for model in self.model_flood:
             model.train_model()
 
+
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
         of input postcodes.
@@ -181,7 +182,11 @@ class Tool(object):
              get_flood_class_from_OSGB36_locations and
              get_flood_class_from_OSGB36_locations method.
         """
-        return {'all_zero_risk': 0}
+        dicti_method = {'KNNClassifier':0,
+                        'RandomForestClassifier':1,
+                        'SVC':2
+                       }
+        return dicti_method
 
     def get_flood_class_from_OSGB36_locations(self, eastings, northings, method=0):
         """
@@ -260,9 +265,9 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_median_house_price_estimate method.
         """
-        return {'all_england_median': 0}
+        return {'all_england_median': 0, 'KNN':1}
 
-    def get_median_house_price_estimate(self, postcodes, method=0):
+    def get_median_house_price_estimate(self, postcodes, method=1):
         """
         Generate series predicting median house price for a collection
         of poscodes.
@@ -283,15 +288,17 @@ class Tool(object):
         pandas.Series
             Series of median house price estimates indexed by postcodes.
         """
-
+        if isinstance(postcodes, str):
+                postcodes=[postcodes]
         if method == 0:
             return pd.Series(data=np.full(len(postcodes), 245000.0),
                              index=np.asarray(postcodes),
                              name='medianPrice')
+        elif method == 1:
+            model = MedianPriceModel()
+            return model.predict(postcodes)
         else:
-            median_price_model = MedianPriceModel('resources/postcodes_sampled.csv', method)
-            median_price_pred = median_price_model.predict(postcodes=postcodes)
-            return median_price_pred
+            raise IndexError('Method should be either 0 or 1')
 
     @staticmethod
     def get_local_authority_methods():
@@ -334,9 +341,9 @@ class Tool(object):
 
         if method == 0:
             return pd.Series(data=np.full(len(eastings), 'Unknown'),
-                             index=[(est, nth) for est, nth in
+                            index=[(est, nth) for est, nth in
                                     zip(eastings, northings)],
-                             name='localAuthority')
+                            name='localAuthority')
         elif method == 1:
             filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
             local_authority_model = LocalAuthorityModel(filepath1, method)
@@ -365,12 +372,37 @@ class Tool(object):
         pandas.Series
             Series of local authorities indexed by postcodes.
         """
-        east_north_df = get_easting_northing(self, postcodes)
+        east_north_df = self.get_easting_northing(self, postcodes)
         eastings = east_north_df['eastings']
         northings = east_north_df['northings']
     
-        local_auth_east_north =  get_local_authority_estimate(eastings,northings,method=method)
-        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing'])
+        local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
+        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing']) 
+
+    def get_local_authority_estimate_latitude_longitude(self, phi, lam, method=0):
+        """
+        Generate series predicting local authorities for a sequence
+        of postcodes
+
+        Parameters
+        ----------
+        phi : Latitude in degrees or radians, sequence of floats
+        lam : Longitude in degrees or radians, sequence of floats
+        method : int (optional)
+            optionally specify (via a value in
+            self.get_altitude_methods) the regression
+            method to be used.
+        
+        Returns
+        -------
+
+        pandas.Series
+            Series of local_authority.
+        """
+        eastings, northings = get_easting_northing_from_gps_lat_long(self, phi, lam) 
+
+        local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
+        return local_auth_east_north.set_index((east, north) for east, north in zip(eastings, northings))
 
     def get_total_value(self, postal_data):
         """
@@ -391,12 +423,48 @@ class Tool(object):
         pandas.Series
             Series of total property value estimates indexed by locations.
         """
+        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        df1 = pd.read_csv(filepath1).drop(columns=['riskLabel', 'medianPrice'])
+        df2 = pd.read_csv(filepath2)
+        data = pd.concat([df1, df2], ignore_index=True, axis=0)
+        data.drop_duplicates(inplace=True)
+        data = data['postcode']
+        
+        if isinstance(postal_data, str):# if a string is passed, instead of a sequence
+            postal_data = [postal_data] # we change the postal_data to be a 1 member list
+        
+        final_postcode_list = []
+        n_house_list = []
+        for p in postal_data:
+            for i in data:
+                if p in i:
+                    final_postcode_list.append(i)
+        median_series = self.get_median_house_price_estimate(final_postcode_list)
+        
+        filepath3 = os.sep.join((os.path.dirname(__file__), 'resources', 'households_per_sector.csv'))
+        df_house = pd.read_csv(filepath3)
+        df_house['HouseNumber'] = df_house['households'] / df_house['number of postcode units']
+        
+        counter = 0 # it turns out that postcode sector column in the file doesnt cover all the postcode
+                    # so we will append 0 to n_house_list if house number is not found in the household file
+        for j in final_postcode_list:
+            for k in range(len(df_house)):
+                if df_house['postcode sector'].iloc[k] in j:
+                    n_house_list.append(df_house['HouseNumber'].iloc[k])
+            counter += 1
+            if len(n_house_list) < counter:
+                n_house_list.append(0)
+        
+        df_final = pd.DataFrame(data=median_series)
+        df_final['nb_houses'] = n_house_list
+        df_final['total_value'] = df_final[0] * df_final['nb_houses']
+        
+        return df_final['total_value']   
 
-        raise NotImplementedError
-
-    def get_annual_flood_risk(self, postcodes,  risk_labels=None):
+    def get_annual_flood_risk(self, postcodes, risk_labels=None):
         """
-        Return a series of estimates of the total property values of a
+        Return a series of annual flood risk of a
         collection of postcodes.
 
         Risk is defined here as a damage coefficient multiplied by the
@@ -417,9 +485,68 @@ class Tool(object):
         pandas.Series
             Series of total annual flood risk estimates indexed by locations.
         """
+        if isinstance(postcodes, str):
+            postcodes = [postcodes]
+        
+        flood_prob_dic = {1:0.01, 2:0.05, 3:0.1, 
+                          4:0.5, 5:1, 6:1.5, 7:2, 
+                          8:3, 9:4, 10:5}
+        risk = []
+        total_value = Tool.get_total_value(self, postcodes)
+        flood_class = Tool.get_flood_class_from_postcodes(self, postcodes)
+        
+        for l, m in zip(total_value, flood_class):
+            r = 0.05 * l * flood_prob_dic[m]/100   #/100 for percent
+            risk.append(r)
 
-        risk_labels = risk_labels or self.get_flood_class(postcodes)
+        return pd.Series(risk, index=postcodes)
+        
+    def get_postcode_from_OSGB36(self, eastings, northings):
+        """
+        Generate series with nearest postcode
+        for a collection of OSGB36_locations.
 
-        cost = self.get_total_value(risk_labels.index)
+        Parameters
+        ----------
 
-        raise NotImplementedError
+        eastings : sequence of floats
+            Sequence of OSGB36 eastings.
+        northings : sequence of floats
+            Sequence of OSGB36 northings.
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of postcodes with easting and northing pair as multi-index.
+        """
+        if isinstance(eastings, float) | isinstance(eastings, int): #and we assume that if the easting is string, so is northing
+            eastings = [eastings]
+            northings = [northings]
+        
+        if len(eastings) != len(northings):
+            raise IndexError('Length of eastings and northings is not same!')
+
+        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        df1 = pd.read_csv(filepath1)
+        df2 = pd.read_csv(filepath2)
+        df1 = df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
+        df2 = df2.drop(columns=['sector', 'localAuthority'])
+        data = pd.concat([df1, df2], ignore_index=True, axis=0)
+        data.drop_duplicates(inplace=True)
+        
+        postcodes = []
+        ser_index = []
+
+        for i, j in zip(eastings, northings):
+            data['distance'] = np.sqrt((data['easting']-i)**2 + (data['northing'] - j)**2)
+            postcodes.append(data[data['distance'] == data['distance'].min()][['postcode']]['postcode'].iloc[0])
+            ser_index.append((data[data['distance'] == data['distance'].min()][['easting']]['easting'].iloc[0],
+                              data[data['distance'] == data['distance'].min()][['northing']]['northing'].iloc[0]
+                             ))
+        
+        index = pd.MultiIndex.from_tuples(ser_index)
+        
+        return pd.Series(postcodes, index=index)
+
