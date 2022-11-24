@@ -447,9 +447,9 @@ class Tool(object):
         -------
 
         pandas.Series
-            Series of postcode.
+            Series of postcodes with easting and northing pair as multi-index.
         """
-        if isinstance(eastings, str): #and we assume that if the easting is string, so is northing
+        if isinstance(eastings, float) | isinstance(eastings, int): #and we assume that if the easting is string, so is northing
             eastings = [eastings]
             northings = [northings]
         
@@ -466,9 +466,15 @@ class Tool(object):
         data.drop_duplicates(inplace=True)
         
         postcodes = []
+        ser_index = []
 
         for i, j in zip(eastings, northings):
             data['distance'] = np.sqrt((data['easting']-i)**2 + (data['northing'] - j)**2)
             postcodes.append(data[data['distance'] == data['distance'].min()][['postcode']]['postcode'].iloc[0])
-            
-        return pd.Series(postcodes)
+            ser_index.append((data[data['distance'] == data['distance'].min()][['easting']]['easting'].iloc[0],
+                              data[data['distance'] == data['distance'].min()][['northing']]['northing'].iloc[0]
+                             ))
+        
+        index = pd.MultiIndex.from_tuples(ser_index)
+        
+        return pd.Series(postcodes, index=index)
