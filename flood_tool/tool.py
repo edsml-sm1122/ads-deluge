@@ -388,7 +388,7 @@ class Tool(object):
             for i in data:
                 if p in i:
                     final_postcode_list.append(i)
-        median_series = Tool.get_median_house_price_estimate(self, final_postcode_list, method=0)
+        median_series = Tool.get_median_house_price_estimate(self, final_postcode_list)
         
         filepath3 = os.sep.join((os.path.dirname(__file__), 'resources', 'households_per_sector.csv'))
         df_house = pd.read_csv(filepath3)
@@ -405,8 +405,8 @@ class Tool(object):
                 n_house_list.append(0)
         
         df_final = pd.DataFrame(data=median_series)
-        df_final['n'] = n_house_list
-        df_final['total_value'] = df_final['medianPrice'] * df_final['n']
+        df_final['nb_houses'] = n_house_list
+        df_final['total_value'] = df_final['medianPrice'] * df_final['nb_houses']
         
         return df_final['total_value']   
 
