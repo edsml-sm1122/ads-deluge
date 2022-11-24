@@ -360,8 +360,8 @@ class Tool(object):
             Series of local authorities indexed by postcodes.
         """
         east_north_df = self.get_easting_northing(postcodes)
-        eastings = east_north_df['easting']
-        northings = east_north_df['northing']
+        eastings = east_north_df['easting'].tolist()
+        northings = east_north_df['northing'].tolist()
     
         local_auth_east_north =  self.get_local_authority_estimate(eastings,northings,method=method)
         return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['level_0','level_1']) 
@@ -517,7 +517,7 @@ class Tool(object):
         postcodes_df = self.get_postcodes_from_WGS84(latitudes, longitudes)
         flood_risk_df = self.get_annual_flood_risk(postcodes_df)
 
-        return flood_risk_df#.reset_index().set_index((lat, long) for lat, long in zip(latitudes, longitudes))#.drop(columns=['postcodes'])
+        return flood_risk_df.reset_index(name='flood_risk').set_index((lat, long) for lat, long in zip(latitudes, longitudes)).drop(columns=[0])
 
     def get_annual_flood_risk_from_OSGB36(self, eastings, northings, risk_labels=None):
         """
