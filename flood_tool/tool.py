@@ -461,7 +461,7 @@ class Tool(object):
         
         df_final = pd.DataFrame(data=median_series)
         df_final['nb_houses'] = n_house_list
-        df_final['total_value'] = df_final['medianPrice'] * df_final['nb_houses']
+        df_final['total_value'] = df_final[0] * df_final['nb_houses']
         
         return df_final['total_value']   
 
