@@ -16,8 +16,7 @@ __all__ = ['Tool']
 class Tool(object):
     """Class to interact with a postcode database file."""
 
-    def __init__(self, postcode_file='', sample_labels='',
-                 household_file=''):
+    def __init__(self, postcode_unlabelled='', sample_labels='', household_file=''):
 
         """
         Parameters
@@ -32,19 +31,28 @@ class Tool(object):
             by postcode.
         """
 
-        if postcode_file == '':
-            full_postcode_file = os.sep.join((os.path.dirname(__file__),
+        if postcode_unlabelled == '':
+            self.postcode_unlabelled_file = os.sep.join((os.path.dirname(__file__),
                                          'resources',
                                          'postcodes_unlabelled.csv'))
+        elif postcode_unlabelled != '':
+            self.postcode_unlabelled_file = postcode_unlabelled
+
+        if sample_labels == '':
+            self.postcode_sampled_file = os.sep.join((os.path.dirname(__file__),
+                                         'resources',
+                                         'postcodes_sampled.csv'))
+        elif sample_labels != '':
+            self.postcode_sampled_file = sample_labels
 
         if household_file == '':
-            household_file = os.sep.join((os.path.dirname(__file__),
+            self.household_file = os.sep.join((os.path.dirname(__file__),
                                           'resources',
                                           'households_per_sector.csv'))
+        elif household_file != '':
+            self.household_file = household_file
 
-        self.postcodedb = pd.read_csv(full_postcode_file)
-
-    def train(self, labelled_samples=''):
+    def train(self):
         """Train the model using a labelled set of samples.
         
         Parameters
@@ -54,11 +62,10 @@ class Tool(object):
             Filename of a .csv file containing a labelled set of samples.
         """
 
-        if labelled_samples == '':
-            labelled_samples = os.sep.join((os.path.dirname(__file__),
-                                         'resources',
-                                         'postcodes_sample.csv'))
-                                         
+        self.model_flood = [FloodProbModel(postcode_file=self.postcode_sampled_file, postcode_prediction_file=self.postcode_unlabelled_file, selected_method=method) for method in self.get_flood_class_from_postcodes_methods().values()]
+        for model in self.model_flood:
+            model.train_model()
+
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -122,11 +129,13 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_flood_class_from_postcode method.
         """
-        dicti_method = {'KNNClassifier':0,
-                        'RandomForestClassifier':1,
-                        'SVC':2
-                       }
-        return dicti_method
+        models_dic = {'RandomForestRegressor':0,
+                      'KNeighborsRegressor':1,
+                      'XGBRegressor':2,
+                      'GradientBoostingRegressor':3,
+                      'BaggingRegressor':4,
+                      'MLPRegressor':5}
+        return models_dic
 
     def get_flood_class_from_postcodes(self, postcodes, method=0):
         """
@@ -140,38 +149,24 @@ class Tool(object):
             Sequence of postcodes.
         method : int (optional)
             optionally specify (via a value in
-            get_flood_class_from_postcodes_methods) the classification
+            get_flood_class_from_postcodes_methods) the regression
             method to be used.
 
         Returns
         -------
 
         pandas.Series
-            Series of flood risk classification labels indexed by postcodes.
+            Series of flood risk classification labels indexed by input postcodes.
         """
+        
+        # model = FloodProbModel(selected_method=method)
+        # model.train_model()
+        model = self.model_flood[method]
+        X_fetched = model.get_X(postcodes)
+        X_pred = pd.Series(model.predict(X_fetched), index=[postcodes])
+        
+        return X_pred
 
-        if method == 0:
-            selected_method = 'KNN'
-        elif method == 1:
-            selected_method = 'RandomForest'
-        elif method == 2:
-            selected_method = 'SVC'
-        else:
-            raise IndexError('Method should be between 0 and 2')
-        
-        model = FloodProbModel(selected_method)
-        model.train_model()
-        
-        if isinstance(postcodes, str):
-            X_fetched = model.get_X(postcodes)
-        else:
-            X = []
-            for i in postcodes:
-                X.append(model.get_X(i))
-            X_fetched = pd.concat(X, ignore_index=True, axis=0)
-        
-        return pd.Series(model.predict(X_fetched), index=[postcodes])
-       
     @staticmethod
     def get_flood_class_from_locations_methods():
         """
