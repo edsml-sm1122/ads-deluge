@@ -246,7 +246,7 @@ class Tool(object):
         """
         return {'all_england_median': 0, 'KNN':1}
 
-    def get_median_house_price_estimate(self, postcodes, method=0):
+    def get_median_house_price_estimate(self, postcodes, method=1):
         """
         Generate series predicting median house price for a collection
         of poscodes.

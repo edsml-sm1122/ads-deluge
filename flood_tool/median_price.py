@@ -57,10 +57,11 @@ class MedianPriceModel:
         """
 
         # Load data
-        df = pd.read_csv('./flood_tool/resources/postcodes_sampled.csv')
+        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        df = pd.read_csv(filepath1)
         df = df.drop_duplicates()
 
-        # Convert prices to log
+        # Create column for log of prices
         df['logPrice'] = np.log(df.medianPrice)
         
         # Split data randomly and make X and Y
@@ -90,29 +91,19 @@ class MedianPriceModel:
         >>> trained_model = model.train_model()
         
         """
-
-        method_dict = {1:KNeighborsRegressor()}
-        # Transform columns
+        method_dict = {1:KNeighborsRegressor(n_neighbors=1, algorithm='ball_tree', p=2)}
+        
+        # Create pipeline
         num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', RobustScaler())])
-        cat_pipe = Pipeline([('imputer', SimpleImputer(strategy='most_frequent')), ('encoder', OneHotEncoder(handle_unknown='ignore', sparse=False))])
-        preproc = ColumnTransformer([
-            ('num_pipe', num_pipe, ['easting','northing','altitude']),
-            ('cat_pipe', cat_pipe, ['soilType'])], remainder='drop')
-
-        # Combine preprocessing and model
+        preproc = ColumnTransformer([('num_pipe', num_pipe, ['easting','northing','altitude'])], remainder='drop')
         pipe = Pipeline([('preproc',preproc), ('model', method_dict[self.method])])
-        
-        param_grid = {'model__n_neighbors':[1,2,3,5,10,40,100],'model__weights':['uniform','distance'], 
-        'model__algorithm':['auto', 'ball_tree', 'kd_tree', 'brute'], 'model__p':[1,2]}
 
-        cv = GridSearchCV(pipe, scoring='neg_root_mean_squared_error', param_grid=param_grid, cv=5, n_jobs=-1)
-        
-        cv.fit(self.X_train, self.y_train)
-
+        # Train model and save to disk
+        pipe.fit(self.X_train, self.y_train)
         filename = 'finalised_model.sav'
-        pickle.dump(cv.best_estimator_, open(filename, 'wb'))
+        pickle.dump(pipe, open(filename, 'wb'))
 
-        return cv.best_estimator_
+        return pipe
 
     def predict(self, postcodes):
         """
@@ -120,16 +111,23 @@ class MedianPriceModel:
 
         Parameters
         ----------
-        postcodes : sequence of strs
+        postcodes : list of strs
             Sequence of postcodes.
         
         Returns
         --------
         pandas.Series
             Series of median house price estimates indexed by postcodes.
-        """
 
-        df_unlabelled = pd.read_csv('./flood_tool/resources/postcodes_unlabelled.csv')
+        Example
+        --------
+        >>> model = MedianPriceModel(method=1)
+        >>> model.predict(postcodes=['TN6 3AW'])
+        TN6 3AW    141700.0
+        dtype: float64
+        """
+        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        df_unlabelled = pd.read_csv(filepath2)
         new_data = df_unlabelled.set_index('postcode').loc[postcodes].reset_index()
         loaded_model = pickle.load(open('finalised_model.sav', 'rb'))
         y_pred = loaded_model.predict(new_data)
