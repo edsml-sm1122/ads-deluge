@@ -6,16 +6,19 @@ import os
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.ensemble import RandomForestClassifier
-#from imblearn.over_sampling import SMOTE #waiting for approval
+from xgboost import XGBRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import BaggingRegressor
+from sklearn.neural_network import MLPRegressor
+from imblearn.over_sampling import SMOTE
 
 class FloodProbModel:
     """ Class for training selected model and predicting flood probability."""
     
-    def __init__(self, model='KNN'):
+    def __init__(self, selected_method=0):
         """
         Define a classifier model.
         
@@ -29,8 +32,18 @@ class FloodProbModel:
         filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
         self.df1 = pd.read_csv(filepath1)
         self.df2 = pd.read_csv(filepath2)
-        self.model = model
-
+        
+        self.models_dic = {0:RandomForestRegressor(max_features=8, n_estimators=189, oob_score=True),
+                      1:KNeighborsRegressor(n_neighbors=10),
+                      2:XGBRegressor(),
+                      3:GradientBoostingRegressor(),
+                      4:BaggingRegressor(),
+                      5:MLPRegressor()}
+        
+        if selected_method>=0 and selected_method<=6:
+            self.model = self.models_dic[selected_method]
+        else:
+            raise IndexError('Method should be between 0 and 6')
         
     def train_model(self, oversample=False, accuracy_scoring=False):
         """
@@ -74,26 +87,18 @@ class FloodProbModel:
         X_train = self.preproc.transform(X_train)
         X_test = self.preproc.transform(X_test)
         
-        #if oversample == True: #not used until approved by instructor
-        #    sm = SMOTE(k_neighbors=5,random_state = 42) 
-        #    X_train_res, y_train_res = sm.fit_resample(X_train, y_train)
-        #    X_train, y_train = X_train_res, y_train_res
-
-        if self.model == 'KNN':
-            selected = KNeighborsClassifier()
-        elif self.model == 'SVC':
-            selected = SVC()
-        elif self.model == 'RandomForest':
-            selected = RandomForestClassifier()
+        if oversample is True: 
+           sm = SMOTE(k_neighbors=5,random_state = 42) 
+           X_train_res, y_train_res = sm.fit_resample(X_train, y_train)
+           X_train, y_train = X_train_res, y_train_res
         
-        selected.fit(X_train, y_train)
-        self.selected = selected
-        y_pred = selected.predict(X_test)
+        self.model.fit(X_train, y_train)
+        y_pred = self.model.predict(X_test)
         
-        if accuracy_scoring == True:
-            return(selected, accuracy_score(y_test, y_pred))
+        if accuracy_scoring is True:
+            return(self.model, accuracy_score(y_test, y_pred))
         else:
-            return(selected)
+            return(self.model)
         
     def predict(self, X_input):
         """
@@ -127,11 +132,12 @@ class FloodProbModel:
         array([1, 1, 1, ..., 1, 1, 6])
         """
         X_input = self.preproc.transform(X_input)
-        probability = self.selected.predict(X_input)
-        
-        return probability
+        probability = self.model.predict(X_input)
+        probability_round = self.round_y_pred(probability)
+
+        return probability_round
     
-    def get_X(self, postcode):
+    def get_X(self, postcodes):
         """
         Return pd.DataFrame 
         with [easting, northing, altitude, soilType] as columns 
@@ -159,5 +165,27 @@ class FloodProbModel:
         data = pd.concat([df1, df2], ignore_index=True, axis=0)
         data.drop_duplicates(inplace=True)
         
-        X = data[data['postcode']==postcode].drop(columns='postcode')
-        return X
+        if isinstance(postcodes, str):
+            X = data[data['postcode']==postcodes].drop(columns='postcode')
+            return X
+        else:
+            X = []
+            for i in postcodes:
+                X.append(data[data['postcode']==i].drop(columns='postcode'))
+            return pd.concat(X, ignore_index=True, axis=0)
+
+    def round_y_pred(self, y_pred):
+        """
+        Return np.array
+        """
+
+        y_pred_round = []
+        for num in y_pred:
+            if num <= 1:
+                y_pred_round.append(1)
+            elif num >=10:
+                y_pred_round.append(10)
+            else:
+                y_pred_round.append(round(num))
+
+        return y_pred_round

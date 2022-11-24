@@ -121,13 +121,15 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_flood_class_from_postcode method.
         """
-        dicti_method = {'KNNClassifier':0,
-                        'RandomForestClassifier':1,
-                        'SVC':2
-                       }
-        return dicti_method
+        models_dic = {'RandomForestRegressor':0,
+                      'KNeighborsRegressor':1,
+                      'XGBRegressor':2,
+                      'GradientBoostingRegressor':3,
+                      'BaggingRegressor':4,
+                      'MLPRegressor':5}
+        return models_dic
 
-    def get_flood_class_from_postcodes(self, postcodes, method=0):
+    def get_flood_class_from_postcodes(self, postcodes, method_num=0):
         """
         Generate series predicting flood probability classification
         for a collection of postcodes.
@@ -139,37 +141,22 @@ class Tool(object):
             Sequence of postcodes.
         method : int (optional)
             optionally specify (via a value in
-            get_flood_class_from_postcodes_methods) the classification
+            get_flood_class_from_postcodes_methods) the regression
             method to be used.
 
         Returns
         -------
 
         pandas.Series
-            Series of flood risk classification labels indexed by postcodes.
+            Series of flood risk classification labels indexed by input postcodes.
         """
-
-        if method == 0:
-            selected_method = 'KNN'
-        elif method == 1:
-            selected_method = 'RandomForest'
-        elif method == 2:
-            selected_method = 'SVC'
-        else:
-            raise IndexError('Method should be between 0 and 2')
         
-        model = FloodProbModel(selected_method)
+        model = FloodProbModel(selected_method=method_num)
         model.train_model()
+        X_fetched = model.get_X(postcodes)
+        X_pred = pd.Series(model.predict(X_fetched), index=[postcodes])
         
-        if isinstance(postcodes, str):
-            X_fetched = model.get_X(postcodes)
-        else:
-            X = []
-            for i in postcodes:
-                X.append(model.get_X(i))
-            X_fetched = pd.concat(X, ignore_index=True, axis=0)
-        
-        return pd.Series(model.predict(X_fetched), index=[postcodes])
+        return X_pred
 
     @staticmethod
     def get_flood_class_from_locations_methods():
