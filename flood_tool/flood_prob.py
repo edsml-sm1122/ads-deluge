@@ -26,7 +26,7 @@ class FloodProbModel:
         ----------
         model: str
             Available option: 'KNN' for KNeighborsClassifier, 'RandomForest' for
-            RandomForestClassifier, 'SVC' for Support Vector Classifier        
+            RandomForestClassifier, 'SVC' for Support Vector Classifier
         """
         filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
         filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
@@ -98,7 +98,7 @@ class FloodProbModel:
         if accuracy_scoring is True:
             return(self.model, accuracy_score(y_test, y_pred))
         else:
-            return(self.model)
+            return self.model
         
     def predict(self, X_input):
         """

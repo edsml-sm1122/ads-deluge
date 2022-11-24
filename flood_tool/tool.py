@@ -16,8 +16,7 @@ __all__ = ['Tool']
 class Tool(object):
     """Class to interact with a postcode database file."""
 
-    def __init__(self, postcode_file='', sample_labels='',
-                 household_file=''):
+    def __init__(self, postcode_file='', sample_labels='', household_file=''):
 
         """
         Parameters
@@ -37,12 +36,19 @@ class Tool(object):
                                          'resources',
                                          'postcodes_unlabelled.csv'))
 
+        if sample_labels == '':
+            sample_labels_file = os.sep.join((os.path.dirname(__file__),
+                                         'resources',
+                                         'postcodes_sampled.csv'))
+
         if household_file == '':
             household_file = os.sep.join((os.path.dirname(__file__),
                                           'resources',
                                           'households_per_sector.csv'))
 
         self.postcodedb = pd.read_csv(full_postcode_file)
+        self.postcodelabelled = pd.read_csv(sample_labels_file)
+        self.householddb = pd.read_csv(household_file)
 
     def train(self, labelled_samples=''):
         """Train the model using a labelled set of samples.
@@ -54,10 +60,9 @@ class Tool(object):
             Filename of a .csv file containing a labelled set of samples.
         """
 
-        if labelled_samples == '':
-            labelled_samples = os.sep.join((os.path.dirname(__file__),
-                                         'resources',
-                                         'postcodes_sample.csv'))
+        self.model_flood = [FloodProbModel(selected_method=method) for method in self.get_flood_class_from_postcodes_methods().values()]
+        for model in self.model_flood:
+            model.train_model()
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -129,7 +134,7 @@ class Tool(object):
                       'MLPRegressor':5}
         return models_dic
 
-    def get_flood_class_from_postcodes(self, postcodes, method_num=0):
+    def get_flood_class_from_postcodes(self, postcodes, method=0):
         """
         Generate series predicting flood probability classification
         for a collection of postcodes.
@@ -151,8 +156,9 @@ class Tool(object):
             Series of flood risk classification labels indexed by input postcodes.
         """
         
-        model = FloodProbModel(selected_method=method_num)
-        model.train_model()
+        # model = FloodProbModel(selected_method=method)
+        # model.train_model()
+        model = self.model_flood[method]
         X_fetched = model.get_X(postcodes)
         X_pred = pd.Series(model.predict(X_fetched), index=[postcodes])
         
