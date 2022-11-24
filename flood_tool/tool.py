@@ -295,9 +295,11 @@ class Tool(object):
             return pd.Series(data=np.full(len(postcodes), 245000.0),
                              index=np.asarray(postcodes),
                              name='medianPrice')
-        else:
+        elif method == 1:
             model = MedianPriceModel()
             return model.predict(postcodes)
+        else:
+            raise IndexError('Method should be either 0 or 1')
 
     @staticmethod
     def get_local_authority_methods():

@@ -1,4 +1,4 @@
-"""Test Module for median_price.py."""
+"""Test Module for median price estimate."""
 
 import flood_tool
 import numpy as np
@@ -8,36 +8,33 @@ import sklearn
 from pytest import mark
 from flood_tool import median_price
 
+tool = flood_tool.Tool()
 median_price_model = median_price.MedianPriceModel(method=1)
-POSTCODES = ['TN6 3AW','BN1 5PF']   
 
-def test_load_data():
-    """Check """
-    data = median_price_model.load_data()
-    assert(np.asarray(data, dtype=object).shape==(4,))
-    assert(len(data[0])==28000)
-    assert(len(data[1])==12000)
-    assert(len(data[2])==28000)
-    assert(len(data[3])==12000)
-    assert(issubclass(type(data[0]), pd.DataFrame))
-    assert(issubclass(type(data[1]), pd.DataFrame))
-    assert(issubclass(type(data[2]), pd.Series))
-    assert(issubclass(type(data[3]), pd.Series))
+POSTCODES = ['BN1 5PF', 'TN6 3AW']
+METHODS = tool.get_house_price_methods()
 
-def test_train_model():
-    """Check """
+def test_median_house_price_estimate_type():
+    """Check that return type is a pd.Series and that its length is the same as the number of postcodes"""
+    for method in METHODS.values():
+        data = tool.get_median_house_price_estimate(POSTCODES, method=method)
+        assert(issubclass(type(data), pd.Series))
+        assert(len(data)==len(POSTCODES))
+
+def test_median_house_price_estimate_index():
+    """Check that indices of the returned series are the postcodes"""
+    for method in METHODS.values():
+        data = tool.get_median_house_price_estimate(POSTCODES, method=method)
+        assert(data.index == POSTCODES).all()
+
+def test_train_KNN_model():
+    """Check KNN model is trained with method 1"""
     data = median_price_model.train_model()
     assert(len(data.named_steps)==2)
     assert(type(data[-1])==sklearn.neighbors._regression.KNeighborsRegressor)
 
-def test_predict():
-    """Check """
-    data = median_price_model.predict(POSTCODES)
-    assert(issubclass(type(data), pd.Series))
-    assert(len(POSTCODES)==len(data))
-    assert(data.index==POSTCODES).all()
-
 if __name__ == "__main__":
-    test_load_data()
-    test_train_model()
-    test_predict()
+    test_median_house_price_estimate_type()
+    test_median_house_price_estimate_index()
+    test_train_KNN_model()
+

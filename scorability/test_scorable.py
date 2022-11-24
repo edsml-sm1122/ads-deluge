@@ -64,3 +64,4 @@ SCORES = np.array([[100, 80, 60, 60, 30, 0, -30, -600, -1800, -2400],
 def score_prediction(predicted, truth):
     return sum([SCORES[_p-1, _t-1]
                 for _p, _t in zip(predicted, truth)])
+
