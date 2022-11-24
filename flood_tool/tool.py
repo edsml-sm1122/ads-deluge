@@ -388,7 +388,7 @@ class Tool(object):
             for i in data:
                 if p in i:
                     final_postcode_list.append(i)
-        median_series = Tool.get_median_house_price_estimate(self, final_postcode_list)
+        median_series = self.get_median_house_price_estimate(final_postcode_list)
         
         filepath3 = os.sep.join((os.path.dirname(__file__), 'resources', 'households_per_sector.csv'))
         df_house = pd.read_csv(filepath3)
