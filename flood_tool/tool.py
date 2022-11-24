@@ -7,9 +7,8 @@ import pandas as pd
 from .median_price import *
 from .geo import *
 from .flood_prob import *
+from .local_authority import *
 
-# import geo
-# import flood_prob
 
 __all__ = ['Tool']
 
@@ -59,6 +58,7 @@ class Tool(object):
             labelled_samples = os.sep.join((os.path.dirname(__file__),
                                          'resources',
                                          'postcodes_sample.csv'))
+                                         
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -270,9 +270,9 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_median_house_price_estimate method.
         """
-        return {'all_england_median': 0}
+        return {'all_england_median': 0, 'KNN':1}
 
-    def get_median_house_price_estimate(self, postcodes, method=0):
+    def get_median_house_price_estimate(self, postcodes, method=1):
         """
         Generate series predicting median house price for a collection
         of poscodes.
@@ -293,17 +293,15 @@ class Tool(object):
         pandas.Series
             Series of median house price estimates indexed by postcodes.
         """
-
+        if isinstance(postcodes, str):
+                postcodes=[postcodes]
         if method == 0:
             return pd.Series(data=np.full(len(postcodes), 245000.0),
                              index=np.asarray(postcodes),
                              name='medianPrice')
         else:
-            #median_price_model = MedianPriceModel('resources/postcodes_sampled.csv', method) #we cant just pass the filepath, we need os
-            filepath = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-            median_price_model = MedianPriceModel(filepath, method)
-            median_price_pred = median_price_model.predict(postcodes=postcodes)
-            return median_price_pred
+            model = MedianPriceModel()
+            return model.predict(postcodes)
 
     @staticmethod
     def get_local_authority_methods():
@@ -318,11 +316,11 @@ class Tool(object):
              no inate meaning) on to an identifier to be passed to the
              get_altitude_estimate method.
         """
-        return {'Do Nothing': 0}
+        return {'Do Nothing': 0, 'K-Neighbors': 1}
 
     def get_local_authority_estimate(self, eastings, northings, method=0):
         """
-        Generate series predicting local authorities in m for a sequence
+        Generate series predicting local authorities for a sequence
         of OSGB36 locations.
 
         Parameters
@@ -334,14 +332,14 @@ class Tool(object):
             Sequence of OSGB36 northings.
         method : int (optional)
             optionally specify (via a value in
-            self.get_altitude_methods) the regression
+            self.get_local_authority_methods) the classification
             method to be used.
 
         Returns
         -------
 
         pandas.Series
-            Series of altitudes indexed by postcodes.
+            Series of local authorities indexed by eastings and northings.
         """
 
         if method == 0:
@@ -349,8 +347,40 @@ class Tool(object):
                              index=[(est, nth) for est, nth in
                                     zip(eastings, northings)],
                              name='localAuthority')
+        elif method == 1:
+            filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+            local_authority_model = LocalAuthorityModel(filepath1, method)
+            local_authority_pred = local_authority_model.predict(eastings, northings)
+            return local_authority_pred
         else:
-            raise NotImplementedError
+            raise IndexError('Method should be either 0 or 1')
+
+    def get_local_authority_estimate_postcodes(self, postcodes, method=0):
+        """
+        Generate series predicting local authorities for a sequence
+        of postcodes
+
+        Parameters
+        ----------
+
+        postcodes: sequence of strings
+        method : int (optional)
+            optionally specify (via a value in
+            self.get_local_authority_methods) the classification
+            method to be used.
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of local authorities indexed by postcodes.
+        """
+        east_north_df = get_easting_northing(self, postcodes)
+        eastings = east_north_df['eastings']
+        northings = east_north_df['northings']
+    
+        local_auth_east_north =  get_local_authority_estimate(eastings,northings,method=method)
+        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing'])
 
     def get_total_value(self, postal_data):
         """
@@ -448,3 +478,53 @@ class Tool(object):
             risk.append(r)
 
         return pd.Series(risk, index=postcodes)
+        
+    def get_postcode_from_OSGB36(self, eastings, northings):
+        """
+        Generate series with nearest postcode
+        for a collection of OSGB36_locations.
+
+        Parameters
+        ----------
+
+        eastings : sequence of floats
+            Sequence of OSGB36 eastings.
+        northings : sequence of floats
+            Sequence of OSGB36 northings.
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of postcodes with easting and northing pair as multi-index.
+        """
+        if isinstance(eastings, float) | isinstance(eastings, int): #and we assume that if the easting is string, so is northing
+            eastings = [eastings]
+            northings = [northings]
+        
+        if len(eastings) != len(northings):
+            raise IndexError('Length of eastings and northings is not same!')
+
+        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        df1 = pd.read_csv(filepath1)
+        df2 = pd.read_csv(filepath2)
+        df1 = df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
+        df2 = df2.drop(columns=['sector', 'localAuthority'])
+        data = pd.concat([df1, df2], ignore_index=True, axis=0)
+        data.drop_duplicates(inplace=True)
+        
+        postcodes = []
+        ser_index = []
+
+        for i, j in zip(eastings, northings):
+            data['distance'] = np.sqrt((data['easting']-i)**2 + (data['northing'] - j)**2)
+            postcodes.append(data[data['distance'] == data['distance'].min()][['postcode']]['postcode'].iloc[0])
+            ser_index.append((data[data['distance'] == data['distance'].min()][['easting']]['easting'].iloc[0],
+                              data[data['distance'] == data['distance'].min()][['northing']]['northing'].iloc[0]
+                             ))
+        
+        index = pd.MultiIndex.from_tuples(ser_index)
+        
+        return pd.Series(postcodes, index=index)
+
