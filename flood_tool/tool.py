@@ -71,10 +71,10 @@ class Tool(object):
             model.train_model()
 
         # init and train MedianPrice model
-        self.model_medianprice = MedianPriceModel(labelled_data=self.postcode_sampled_file, unlabelled_data=self.postcode_unlabelled_file, method=1)
+        self.model_median_price = MedianPriceModel(labelled_data=self.postcode_sampled_file, unlabelled_data=self.postcode_unlabelled_file, method=1)
 
         # init and train LocalAuthority model
-        self.local_authority_model = [LocalAuthorityModel(self.postcode_sampled_file, method=1)]
+        self.model_local_authority = LocalAuthorityModel(self.postcode_sampled_file, method=1)
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -296,7 +296,7 @@ class Tool(object):
         elif method == 1:
             #model = MedianPriceModel()
 
-            return self.model_medianprice[0].predict(postcodes)
+            return self.model_median_price.predict(postcodes)
         else:
             raise IndexError('Method should be either 0 or 1')
 
@@ -346,7 +346,7 @@ class Tool(object):
                             name='localAuthority')
         elif method == 1:
             
-            local_authority_pred = self.local_authority_model[0].predict(eastings, northings)
+            local_authority_pred = self.model_local_authority.predict(eastings, northings)
             return local_authority_pred
         else:
             raise IndexError('Method should be either 0 or 1')
