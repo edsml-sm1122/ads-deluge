@@ -10,22 +10,33 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler
 import pickle
 
-class MedianPriceModel:  
+class MedianPriceModel():  
     """ Class for training selected model and predicting median house price."""
-    def __init__(self, method):
+    def __init__(self, labelled_data='', unlabelled_data='', method=1):
         """
         Define and train regression model.
         
         Parameters
         ----------
-        method: int
-            Available options:   {0: all of england median, 1: KNeighborsRegressor()} 
-
+        method: int (opt)
+            Available options:  {1: KNeighborsRegressor()} 
         """
-        self.X_train, self.X_test, self.y_train, self.y_test = self.load_data()
         self.method=method
-        self.trained_model = self.train_model()
+        if labelled_data == '':
+            labelled_data = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        else:
+            labelled_data = os.sep.join((os.path.dirname(__file__), 'resources', labelled_data))
+        
+        if unlabelled_data == '':
+            unlabelled_data = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        else:
+            unlabelled_data = os.sep.join((os.path.dirname(__file__), 'resources', unlabelled_data))
 
+        self.labelled_df = pd.read_csv(labelled_data)
+        self.unlabelled_df = pd.read_csv(unlabelled_data)
+        self.X_train, self.X_test, self.y_train, self.y_test = self.load_data()
+        self.trained_model = self.train_model()
+        
         return None
 
     def load_data(self):
@@ -45,13 +56,12 @@ class MedianPriceModel:
 
         Example
         -------
-        >>> model = MedianPriceModel(method=1)
+        >>> model = MedianPriceModel()
         >>> X_train, X_test, y_train, y_test = model.load_data()
         """
 
         # Load data
-        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-        df = pd.read_csv(filepath1)
+        df = self.labelled_df
         df = df.drop_duplicates()
 
         # Create column for log of prices
@@ -104,7 +114,7 @@ class MedianPriceModel:
 
         Parameters
         ----------
-        postcodes : list of strs
+        postcodes : sequence of strs
             Sequence of postcodes.
         
         Returns
@@ -119,11 +129,10 @@ class MedianPriceModel:
         TN6 3AW    141700.0
         dtype: float64
         """
-        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
-        df_unlabelled = pd.read_csv(filepath2)
+
         if isinstance(postcodes, str):
             postcodes=[postcodes]
-        new_data = df_unlabelled.set_index('postcode').loc[postcodes].reset_index()
+        new_data = self.unlabelled_df.set_index('postcode').loc[postcodes].reset_index()
         loaded_model = pickle.load(open('finalised_model.sav', 'rb'))
         y_pred = loaded_model.predict(new_data)
         pred = np.exp(y_pred)

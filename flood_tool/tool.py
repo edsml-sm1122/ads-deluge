@@ -56,6 +56,7 @@ class Tool(object):
             labelled_samples = os.sep.join((os.path.dirname(__file__),
                                          'resources',
                                          'postcodes_sample.csv'))
+                                         
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -274,7 +275,7 @@ class Tool(object):
                              index=np.asarray(postcodes),
                              name='medianPrice')
         else:
-            model = MedianPriceModel(method)
+            model = MedianPriceModel()
             return model.predict(postcodes)
 
     @staticmethod
