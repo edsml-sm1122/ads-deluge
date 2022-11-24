@@ -24,7 +24,7 @@ def get_station_data_from_csv(filename, station_reference):
 
     return pd.to_numeric(frame.value.values)
 
-def get_live_station_data(filename, station_reference):
+def get_live_station_data(station_reference):
     """Return readings for a specified recording station from live API.
 
     Parameters
@@ -37,8 +37,6 @@ def get_live_station_data(filename, station_reference):
 
     >>> data = get_live_station_data('0184TH')
     """
-    frame=pd.read_csv(filename)
-    frame=frame.loc[frame.stationReference==station_reference]
     url='https://environment.data.gov.uk/flood-monitoring/id/stations/'+station_reference
     dfurl=pd.read_json(url)
     return pd.to_numeric(dfurl.loc['measures']['items']['latestReading']['value'])
