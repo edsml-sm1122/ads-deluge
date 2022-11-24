@@ -17,25 +17,33 @@ class FloodProbModel:
     
     def __init__(self, postcode_file='', postcode_prediction_file='', selected_method=0):
         """
-        Define a classifier model.
+        Define a regressor model with given postcode datasets.
         
         Parameters
         ----------
-        model: str
-            Available option: 'KNN' for KNeighborsClassifier, 'RandomForest' for
-            RandomForestClassifier, 'SVC' for Support Vector Classifier
+        postcode_file: str, optional
+            Filename of a .csv file containing geographic location
+            data for postcodes with labelled risklevel and medianprice.
+
+        postcode_prediction_file : str, optional
+            Filename of a .csv file containing geographic location
+            data for postcodes.
+
+        selected_method: int, optional
+            Available option: 0 for RandomForestRegressor, 1 for KNeighborsRegressor, 
+            2 for GradientBoostingRegressor, 3 for BaggingRegressor, 4 for MLPRegressor
         """
         
         self.models_dic = {0:RandomForestRegressor(max_features=8, n_estimators=189, oob_score=True),
-                      1:KNeighborsRegressor(n_neighbors=10),
-                      2:GradientBoostingRegressor(),
-                      3:BaggingRegressor(),
-                      4:MLPRegressor()}
+                      1:KNeighborsRegressor(n_neighbors=10)}
+                    #   2:GradientBoostingRegressor(),
+                    #   3:BaggingRegressor(),
+                    #   4:MLPRegressor()}
         
         if selected_method>=0 and selected_method<=6:
             self.model = self.models_dic[selected_method]
         else:
-            raise IndexError('Method should be between 0 and 6')
+            raise IndexError('Method should be 0 or 1')
 
         if postcode_file == '':
             filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
@@ -52,29 +60,24 @@ class FloodProbModel:
         
     def train_model(self, oversample=False):
         """
-        Return trained model (using postcode_sampled.csv, training set) 
-        and, if accuracy_scoring is set True, accuracy score (using test set) 
+        Return trained model (using postcode_sampled.csv, training set)
 
         Parameters
         ----------
         oversample: bool
             If true, target will be balanced using SMOTE method
-        accuracy_scoring: bool
-            If true, will return accuracy score alongside trained model
         
         ----------
         
         Returns
         -------
         trained model:
-            selected trained classifier model
-        accuracy score: float
+            selected trained regressor model using given postcode dataset.
 
         Example
         -------
-        >>> model = FloodProbModel('KNN')
+        >>> model = FloodProbModel()
         >>> model.train_model()
-        KNeighborsClassifier(), 0.752106
         """
 
         y_train = self.df_postcodes_sampled['riskLabel']
@@ -103,30 +106,33 @@ class FloodProbModel:
         Parameters
         ----------
         X_input: pd.Dataframe
-            with [easting, northing, altitude, soilType] as columns
+            with preporcessed [easting, northing, altitude, soilType] features as columns
         
         ----------
         
         Returns
         -------
-        flood probability: 1D ndarray with length = row of X_input
+        flood probability: 1D ndarray 
+            with length = row of X_input 
+            value = rounded predicted flood class (int)
 
         Example
         -------
-        >>> model = FloodProbModel('KNN')
+        >>> model = FloodProbModel()
         >>> model.train_model()
         >>> t = pd.DataFrame([[469395.0, 108803.0, 30, 'Planosols']], 
         >>>     columns=['easting', 'northing', 'altitude', 'soilType'])
         >>> model.predict(t)
         array([1])
         
-        >>> model = FloodProbModel('KNN')
+        >>> model = FloodProbModel()
         >>> model.train_model()
         >>> df = pd.read_csv('resources/postcodes_unlabelled.csv')
         >>> df.drop(columns=['postcode', 'sector', 'localAuthority'], inplace=True)
         >>> model.predict(df)
         array([1, 1, 1, ..., 1, 1, 6])
         """
+
         X_input = self.preproc.transform(X_input)
         probability = self.model.predict(X_input)
         probability_round = self.round_y_pred(probability)
@@ -135,8 +141,7 @@ class FloodProbModel:
     
     def get_X(self, postcodes):
         """
-        Return pd.DataFrame 
-        with [easting, northing, altitude, soilType] as columns 
+        find corresponding [easting, northing, altitude, soilType] data in labelled and sampled dataset
         
         Parameters
         ----------
@@ -150,7 +155,7 @@ class FloodProbModel:
 
         Example
         -------
-        >>> model = FloodProbModel('KNN')
+        >>> model = FloodProbModel()
         >>> model.get_X('PO7 8PR')
            easting   northing  altitude  soilType
         0  469395.0  108803.0  30        Planosols
@@ -172,7 +177,18 @@ class FloodProbModel:
 
     def round_y_pred(self, y_pred):
         """
-        Return np.array
+        round the input dataset into corresponding class
+        
+        Parameters
+        ----------
+        y_pred: array
+            with value of float
+        
+        ----------
+        
+        Returns
+        -------
+        array with value of integer
         """
 
         y_pred_round = []

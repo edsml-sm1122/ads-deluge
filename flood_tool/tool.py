@@ -22,9 +22,13 @@ class Tool(object):
         Parameters
         ----------
 
-        full_postcode_file : str, optional
+        postcode_unlabelled : str, optional
             Filename of a .csv file containing geographic location
             data for postcodes.
+
+        sample_labels : str, optional
+            Filename of a .csv file containing geographic location
+            data for postcodes with labelled risklevel and medianprice.
 
         household_file : str, optional
             Filename of a .csv file containing information on households
@@ -56,14 +60,7 @@ class Tool(object):
         self.postcodedb.drop_duplicates(inplace=True)
 
     def train(self):
-        """Train the model using a labelled set of samples.
-        
-        Parameters
-        ----------
-        
-        labelled_samples : str, optional
-            Filename of a .csv file containing a labelled set of samples.
-        """
+        """Train all models that can be used by giving a labelled set of samples."""
 
         # init and train flood model
         self.model_flood = [FloodProbModel(postcode_file=self.postcode_sampled_file, postcode_prediction_file=self.postcode_unlabelled_file, selected_method=method) for method in self.get_flood_class_from_postcodes_methods().values()]
@@ -127,7 +124,7 @@ class Tool(object):
     @staticmethod
     def get_flood_class_from_postcodes_methods():
         """
-        Get a dictionary of available flood probablity classification methods
+        Get a dictionary of available flood probablity regression methods
         for postcodes.
 
         Returns
@@ -153,7 +150,7 @@ class Tool(object):
         Parameters
         ----------
 
-        postcodes : sequence of strs
+        postcodes : sequence of strs or a str
             Sequence of postcodes.
         method : int (optional)
             optionally specify (via a value in
@@ -166,12 +163,14 @@ class Tool(object):
         pandas.Series
             Series of flood risk classification labels indexed by input postcodes.
         """
-        
-        # model = FloodProbModel(selected_method=method)
-        # model.train_model()
+        if isinstance(postcodes, str):
+            postcodes = list(postcodes)
+
+        if method!=0 and method!=1:
+            raise IndexError('Method should be either 0 or 1')
         model = self.model_flood[method]
         X_fetched = model.get_X(postcodes)
-        X_pred = pd.Series(model.predict(X_fetched), index=[postcodes])
+        X_pred = pd.Series(model.predict(X_fetched), index=postcodes)
         
         return X_pred
 
@@ -191,11 +190,11 @@ class Tool(object):
              get_flood_class_from_OSGB36_locations method.
         """
         models_dic = {'RandomForestRegressor':0,
-                      'KNeighborsRegressor':1,
-                      'XGBRegressor':2,
-                      'GradientBoostingRegressor':3,
-                      'BaggingRegressor':4,
-                      'MLPRegressor':5}
+                      'KNeighborsRegressor':1}
+                    #   'XGBRegressor':2,
+                    #   'GradientBoostingRegressor':3,
+                    #   'BaggingRegressor':4,
+                    #   'MLPRegressor':5}
         return models_dic
 
     def get_flood_class_from_OSGB36_locations(self, eastings, northings, method=0):
@@ -526,10 +525,10 @@ class Tool(object):
         if len(eastings) != len(northings):
             raise IndexError('Length of eastings and northings is not same!')
 
-        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
-        df1 = pd.read_csv(filepath1)
-        df2 = pd.read_csv(filepath2)
+        # filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        # filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        df1 = pd.read_csv(self.postcode_sampled_file)
+        df2 = pd.read_csv(self.postcode_unlabelled_file)
         df1 = df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
         df2 = df2.drop(columns=['sector', 'localAuthority'])
         data = pd.concat([df1, df2], ignore_index=True, axis=0)
