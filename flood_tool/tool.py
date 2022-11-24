@@ -395,59 +395,45 @@ class Tool(object):
         """
         Return a series of estimates of the total property values
         of a sequence of postcode units or postcode sectors.
-
-
         Parameters
         ----------
-
         postal_data : sequence of strs
             Sequence of postcode units or postcodesectors
-
-
         Returns
         -------
-
         pandas.Series
             Series of total property value estimates indexed by locations.
         """
-        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
-        df1 = pd.read_csv(filepath1).drop(columns=['riskLabel', 'medianPrice'])
-        df2 = pd.read_csv(filepath2)
-        data = pd.concat([df1, df2], ignore_index=True, axis=0)
-        data.drop_duplicates(inplace=True)
-        data = data['postcode']
+
+        df1 = pd.read_csv(self.postcode_sampled_file).drop(columns=['riskLabel'])
+        df2 = pd.read_csv(self.postcode_unlabelled_file)
+
+        model=self.model_median_price
         
+        df2['medianPrice']=model.predict(postcodes=df2.postcode.values.tolist()).values
+        data = pd.concat([df1, df2], ignore_index=True, axis=0)
+
+        house = pd.read_csv(self.household_file)
+        house['average_households']=house['households']/house['number of postcode units']
+        mean_households=np.mean(house['average_households'])
+
         if isinstance(postal_data, str):# if a string is passed, instead of a sequence
             postal_data = [postal_data] # we change the postal_data to be a 1 member list
+
+        impact_list=[] 
+
+        for i in postal_data:
+            if i[:-2] in house['postcode sector'].values:
+                average_households=house[house['postcode sector']==i[:-2]].average_households
+                medianPrice=data[data.postcode==i].medianPrice.values[0]
+                impact_list.append((average_households*medianPrice).values[0])
+            else:
+                median_price1=data[data.postcode==i].medianPrice.values[0]
+                impact_list.append(median_price1*mean_households)
+
+        df_final=pd.Series(data=impact_list,index=postal_data)
         
-        final_postcode_list = []
-        n_house_list = []
-        for p in postal_data:
-            for i in data:
-                if p in i:
-                    final_postcode_list.append(i)
-        median_series = self.get_median_house_price_estimate(final_postcode_list)
-        
-        filepath3 = os.sep.join((os.path.dirname(__file__), 'resources', 'households_per_sector.csv'))
-        df_house = pd.read_csv(filepath3)
-        df_house['HouseNumber'] = df_house['households'] / df_house['number of postcode units']
-        
-        counter = 0 # it turns out that postcode sector column in the file doesnt cover all the postcode
-                    # so we will append 0 to n_house_list if house number is not found in the household file
-        for j in final_postcode_list:
-            for k in range(len(df_house)):
-                if df_house['postcode sector'].iloc[k] in j:
-                    n_house_list.append(df_house['HouseNumber'].iloc[k])
-            counter += 1
-            if len(n_house_list) < counter:
-                n_house_list.append(0)
-        
-        df_final = pd.DataFrame(data=median_series)
-        df_final['nb_houses'] = n_house_list
-        df_final['total_value'] = df_final[0] * df_final['nb_houses']
-        
-        return df_final['total_value']   
+        return df_final   
 
     def get_annual_flood_risk(self, postcodes, risk_labels=None):
         """
