@@ -19,7 +19,7 @@ def test_estimate_local_authority():
     data = tool.get_easting_northing(['BN1 5PF'])
     print(data)
 
-    local_authority_estimate = tool.get_local_authority_estimate(data.easting.tolist(), data.northing.tolist(), method=1)
+    local_authority_estimate = tool.get_local_authority_estimate(data.easting.tolist(), data.northing.tolist(), method=0)
 
     print(f'length of input: {len(data)}')
     print(f'lenght of output: {len(local_authority_estimate)}')
