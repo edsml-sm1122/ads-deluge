@@ -428,3 +428,47 @@ class Tool(object):
         cost = self.get_total_value(risk_labels.index)
 
         raise NotImplementedError
+        
+        
+    def get_postcode_from_OSGB36(self, eastings, northings):
+        """
+        Generate series defining postcode (using K-Neighbors)
+        for a collection of OSGB36_locations.
+
+        Parameters
+        ----------
+
+        eastings : sequence of floats
+            Sequence of OSGB36 eastings.
+        northings : sequence of floats
+            Sequence of OSGB36 northings.
+
+        Returns
+        -------
+
+        pandas.Series
+            Series of postcode.
+        """
+        if isinstance(eastings, str): #and we assume that if the easting is string, so is northing
+            eastings = [eastings]
+            northings = [northings]
+        
+        if len(eastings) != len(northings):
+            raise IndexError('Length of eastings and northings is not same!')
+
+        filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
+        filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
+        df1 = pd.read_csv(filepath1)
+        df2 = pd.read_csv(filepath2)
+        df1 = df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
+        df2 = df2.drop(columns=['sector', 'localAuthority'])
+        data = pd.concat([df1, df2], ignore_index=True, axis=0)
+        data.drop_duplicates(inplace=True)
+        
+        postcodes = []
+
+        for i, j in zip(eastings, northings):
+            data['distance'] = np.sqrt((data['easting']-i)**2 + (data['northing'] - j)**2)
+            postcodes.append(data[data['distance'] == data['distance'].min()][['postcode']]['postcode'].iloc[0])
+            
+        return pd.Series(postcodes)
