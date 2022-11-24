@@ -25,12 +25,12 @@ class MedianPriceModel():
         if labelled_data == '':
             labelled_data = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
         else:
-            labelled_data = os.sep.join((os.path.dirname(__file__), 'resources', labelled_data))
+            labelled_data = labelled_data
         
         if unlabelled_data == '':
             unlabelled_data = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
         else:
-            unlabelled_data = os.sep.join((os.path.dirname(__file__), 'resources', unlabelled_data))
+            unlabelled_data = unlabelled_data
 
         self.labelled_df = pd.read_csv(labelled_data)
         self.unlabelled_df = pd.read_csv(unlabelled_data)
