@@ -213,14 +213,8 @@ class Tool(object):
         pandas.Series
             Series of flood risk classification labels indexed by locations.
         """
-
-        if method == 0:
-            return pd.Series(data=np.ones(len(eastings), int),
-                             index=[(est, nth) for est, nth in
-                                    zip(eastings, northings)],
-                             name='riskLabel')
-        else:
-            raise NotImplementedError
+        postcodes = self.get_postcode_from_OSGB36(eastings, northings)
+        return self.get_flood_class_from_postcodes(postcodes)
 
     def get_flood_class_from_WGS84_locations(self, longitudes, latitudes, method=0):
         """
@@ -245,14 +239,9 @@ class Tool(object):
         pandas.Series
             Series of flood risk classification labels indexed by locations.
         """
-
-        if method == 0:
-            return pd.Series(data=np.ones(len(longitudes), int),
-                             index=[(lng, lat) for lng, lat in
-                                    zip(longitudes, latitudes)],
-                             name='riskLabel')
-        else:
-            raise NotImplementedError
+        eastings, northings = get_easting_northing_from_gps_lat_long(phi=latitudes, lam=longitudes)
+        postcodes = self.get_postcode_from_OSGB36(eastings, northings)
+        return self.get_flood_class_from_postcodes(postcodes)
 
     @staticmethod
     def get_house_price_methods():
