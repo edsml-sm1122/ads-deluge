@@ -182,11 +182,13 @@ class Tool(object):
              get_flood_class_from_OSGB36_locations and
              get_flood_class_from_OSGB36_locations method.
         """
-        dicti_method = {'KNNClassifier':0,
-                        'RandomForestClassifier':1,
-                        'SVC':2
-                       }
-        return dicti_method
+        models_dic = {'RandomForestRegressor':0,
+                      'KNeighborsRegressor':1,
+                      'XGBRegressor':2,
+                      'GradientBoostingRegressor':3,
+                      'BaggingRegressor':4,
+                      'MLPRegressor':5}
+        return models_dic
 
     def get_flood_class_from_OSGB36_locations(self, eastings, northings, method=0):
         """
