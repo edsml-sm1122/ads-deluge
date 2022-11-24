@@ -1,21 +1,14 @@
 import pandas as pd
 import numpy as np
 import os
-from sklearn.model_selection import train_test_split, cross_validate
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import cross_validate
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import OneHotEncoder
 import pickle
-from scipy.stats import zscore
 
 class MedianPriceModel:  
     """ Class for training selected model and predicting median house price."""
@@ -94,7 +87,7 @@ class MedianPriceModel:
         method_dict = {1:KNeighborsRegressor(n_neighbors=1, algorithm='ball_tree', p=2)}
         
         # Create pipeline
-        num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', RobustScaler())])
+        num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', MinMaxScaler())])
         preproc = ColumnTransformer([('num_pipe', num_pipe, ['easting','northing'])], remainder='drop')
         pipe = Pipeline([('preproc',preproc), ('model', method_dict[self.method])])
 
@@ -128,6 +121,8 @@ class MedianPriceModel:
         """
         filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
         df_unlabelled = pd.read_csv(filepath2)
+        if isinstance(postcodes, str):
+            postcodes=[postcodes]
         new_data = df_unlabelled.set_index('postcode').loc[postcodes].reset_index()
         loaded_model = pickle.load(open('finalised_model.sav', 'rb'))
         y_pred = loaded_model.predict(new_data)

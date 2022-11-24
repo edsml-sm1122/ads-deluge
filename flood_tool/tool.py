@@ -267,7 +267,8 @@ class Tool(object):
         pandas.Series
             Series of median house price estimates indexed by postcodes.
         """
-
+        if isinstance(postcodes, str):
+                postcodes=[postcodes]
         if method == 0:
             return pd.Series(data=np.full(len(postcodes), 245000.0),
                              index=np.asarray(postcodes),
