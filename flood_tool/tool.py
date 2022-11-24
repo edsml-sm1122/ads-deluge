@@ -170,7 +170,7 @@ class Tool(object):
             X_fetched = pd.concat(X, ignore_index=True, axis=0)
         
         return pd.Series(model.predict(X_fetched), index=[postcodes])
-
+       
     @staticmethod
     def get_flood_class_from_locations_methods():
         """
@@ -338,10 +338,10 @@ class Tool(object):
         """
 
         if method == 0:
-            return pd.Series(data=np.full(len(eastings), 'Unknown'),
-                             index=[(est, nth) for est, nth in
-                                    zip(eastings, northings)],
-                             name='localAuthority')
+                return pd.Series(data=np.full(len(eastings), 'Unknown'),
+                                index=[(est, nth) for est, nth in
+                                        zip(eastings, northings)],
+                                name='localAuthority')
         elif method == 1:
             filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
             local_authority_model = LocalAuthorityModel(filepath1, method)
@@ -375,7 +375,31 @@ class Tool(object):
         northings = east_north_df['northings']
     
         local_auth_east_north =  get_local_authority_estimate(eastings,northings,method=method)
-        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing'])
+        return local_auth_east_north.reset_index().set_index(east_north_df.index).drop(columns=['easting', 'northing']) 
+
+    def get_local_authority_estimate_latitude_longitude(self, phi, lam, method=0):
+        """
+        Generate series predicting local authorities for a sequence
+        of postcodes
+
+        Parameters
+        ----------
+        phi : Latitude in degrees or radians, sequence of floats
+        lam : Longitude in degrees or radians, sequence of floats
+        method : int (optional)
+            optionally specify (via a value in
+            self.get_altitude_methods) the regression
+            method to be used.
+        
+        Returns
+        -------
+
+        pandas.Series
+            Series of local_authority.
+        """
+        eastings, northings = get_easting_northing_from_gps_lat_long(self, phi, lam) 
+
+        return get_local_authority_estimate(eastings, northings, method=method)
 
     def get_total_value(self, postal_data):
         """
