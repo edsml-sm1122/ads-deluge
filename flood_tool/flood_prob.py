@@ -31,14 +31,10 @@ class FloodProbModel:
 
         selected_method: int, optional
             Available option: 0 for RandomForestRegressor, 1 for KNeighborsRegressor, 
-            2 for GradientBoostingRegressor, 3 for BaggingRegressor, 4 for MLPRegressor
         """
         
         self.models_dic = {0:RandomForestRegressor(max_features=8, n_estimators=189, oob_score=True),
-                      1:KNeighborsRegressor(n_neighbors=10)}
-                    #   2:GradientBoostingRegressor(),
-                    #   3:BaggingRegressor(),
-                    #   4:MLPRegressor()}
+                           1:KNeighborsRegressor(n_neighbors=10)}
         
         if selected_method>=0 and selected_method<=6:
             self.model = self.models_dic[selected_method]

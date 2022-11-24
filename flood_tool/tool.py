@@ -137,9 +137,7 @@ class Tool(object):
         """
         models_dic = {'RandomForestRegressor':0,
                       'KNeighborsRegressor':1}
-                    #   'GradientBoostingRegressor':2,
-                    #   'BaggingRegressor':3,
-                    #   'MLPRegressor':4}
+
         return models_dic
 
     def get_flood_class_from_postcodes(self, postcodes, method=0):
@@ -191,10 +189,7 @@ class Tool(object):
         """
         models_dic = {'RandomForestRegressor':0,
                       'KNeighborsRegressor':1}
-                    #   'XGBRegressor':2,
-                    #   'GradientBoostingRegressor':3,
-                    #   'BaggingRegressor':4,
-                    #   'MLPRegressor':5}
+
         return models_dic
 
     def get_flood_class_from_OSGB36_locations(self, eastings, northings, method=0):
@@ -293,7 +288,6 @@ class Tool(object):
                              index=np.asarray(postcodes),
                              name='medianPrice')
         elif method == 1:
-            #model = MedianPriceModel()
 
             return self.model_median_price.predict(postcodes)
         else:
@@ -519,8 +513,7 @@ class Tool(object):
         pandas.Series
             Series of total annual flood risk estimates indexed by locations.
         """
-        # eastings, northings = get_easting_northing_from_gps_lat_long(latitudes, longitudes)
-        # flood_risk_df = self.get_annual_flood_risk_from_OSGB36(eastings, northings)
+
         postcodes_df = self.get_postcodes_from_WGS84(latitudes, longitudes)
         flood_risk_df = self.get_annual_flood_risk(postcodes_df)
 
@@ -582,8 +575,6 @@ class Tool(object):
         if len(eastings) != len(northings):
             raise IndexError('Length of eastings and northings is not same!')
 
-        # filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-        # filepath2 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_unlabelled.csv'))
         df1 = pd.read_csv(self.postcode_sampled_file)
         df2 = pd.read_csv(self.postcode_unlabelled_file)
         df1 = df1.drop(columns=['sector', 'localAuthority', 'riskLabel', 'medianPrice'])
