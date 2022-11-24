@@ -7,4 +7,8 @@ matplotlib
 pytest
 pytest-timeout
 sphinx
+xgboost
+imblearn
+branca 
+geojsoncontour
 
