@@ -5,8 +5,6 @@ import numpy as np
 import os
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
-from sklearn.metrics import accuracy_score
-from xgboost import XGBRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import GradientBoostingRegressor
@@ -30,10 +28,9 @@ class FloodProbModel:
         
         self.models_dic = {0:RandomForestRegressor(max_features=8, n_estimators=189, oob_score=True),
                       1:KNeighborsRegressor(n_neighbors=10),
-                      2:XGBRegressor(),
-                      3:GradientBoostingRegressor(),
-                      4:BaggingRegressor(),
-                      5:MLPRegressor()}
+                      2:GradientBoostingRegressor(),
+                      3:BaggingRegressor(),
+                      4:MLPRegressor()}
         
         if selected_method>=0 and selected_method<=6:
             self.model = self.models_dic[selected_method]

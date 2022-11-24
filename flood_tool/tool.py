@@ -52,6 +52,9 @@ class Tool(object):
         elif household_file != '':
             self.household_file = household_file
 
+        self.postcodedb = pd.concat([pd.read_csv(self.postcode_unlabelled_file),pd.read_csv(self.postcode_sampled_file)], ignore_index=True, axis=0)
+        self.postcodedb.drop_duplicates(inplace=True)
+
     def train(self):
         """Train the model using a labelled set of samples.
         
@@ -62,10 +65,16 @@ class Tool(object):
             Filename of a .csv file containing a labelled set of samples.
         """
 
+        # init and train flood model
         self.model_flood = [FloodProbModel(postcode_file=self.postcode_sampled_file, postcode_prediction_file=self.postcode_unlabelled_file, selected_method=method) for method in self.get_flood_class_from_postcodes_methods().values()]
         for model in self.model_flood:
             model.train_model()
 
+        # init and train MedianPrice model
+        self.model_medianprice = MedianPriceModel(labelled_data=self.postcode_sampled_file, unlabelled_data=self.postcode_unlabelled_file, method=1)
+
+        # init and train LocalAuthority model
+        self.local_authority_model = [LocalAuthorityModel(self.postcode_sampled_file, method=1)]
 
     def get_easting_northing(self, postcodes):
         """Get a frame of OS eastings and northings from a collection
@@ -130,11 +139,10 @@ class Tool(object):
              get_flood_class_from_postcode method.
         """
         models_dic = {'RandomForestRegressor':0,
-                      'KNeighborsRegressor':1,
-                      'XGBRegressor':2,
-                      'GradientBoostingRegressor':3,
-                      'BaggingRegressor':4,
-                      'MLPRegressor':5}
+                      'KNeighborsRegressor':1}
+                    #   'GradientBoostingRegressor':2,
+                    #   'BaggingRegressor':3,
+                    #   'MLPRegressor':4}
         return models_dic
 
     def get_flood_class_from_postcodes(self, postcodes, method=0):
@@ -286,8 +294,9 @@ class Tool(object):
                              index=np.asarray(postcodes),
                              name='medianPrice')
         elif method == 1:
-            model = MedianPriceModel()
-            return model.predict(postcodes)
+            #model = MedianPriceModel()
+
+            return self.model_medianprice[0].predict(postcodes)
         else:
             raise IndexError('Method should be either 0 or 1')
 
@@ -336,9 +345,8 @@ class Tool(object):
                                     zip(eastings, northings)],
                             name='localAuthority')
         elif method == 1:
-            filepath1 = os.sep.join((os.path.dirname(__file__), 'resources', 'postcodes_sampled.csv'))
-            local_authority_model = LocalAuthorityModel(filepath1, method)
-            local_authority_pred = local_authority_model.predict(eastings, northings)
+            
+            local_authority_pred = self.local_authority_model[0].predict(eastings, northings)
             return local_authority_pred
         else:
             raise IndexError('Method should be either 0 or 1')
