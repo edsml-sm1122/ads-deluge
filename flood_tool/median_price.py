@@ -95,7 +95,7 @@ class MedianPriceModel:
         
         # Create pipeline
         num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', RobustScaler())])
-        preproc = ColumnTransformer([('num_pipe', num_pipe, ['easting','northing','altitude'])], remainder='drop')
+        preproc = ColumnTransformer([('num_pipe', num_pipe, ['easting','northing'])], remainder='drop')
         pipe = Pipeline([('preproc',preproc), ('model', method_dict[self.method])])
 
         # Train model and save to disk
