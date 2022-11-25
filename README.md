@@ -34,6 +34,13 @@ This README file *should be updated* over the course of your group's work to rep
 
 *To be written by you during the week*
 
+### Who is this software for?
+
+-	Property agents to calculate risk of their properties
+-	Government to prepare for flooding
+- Environment NGOs
+- Insurance companies
+
 ### User instructions
 
 #### Risk Tool
