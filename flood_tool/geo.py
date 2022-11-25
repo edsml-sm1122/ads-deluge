@@ -156,7 +156,7 @@ def get_easting_northing_from_gps_lat_long(phi, lam, rads=False, datum=osgb36):
         Examples
     --------
     >>> get_easting_northing_from_gps_lat_long([55.5], [-1.54])
-    (array([429157.0]), array([623009]))
+    (array([429157.5449495]), array([623009.09798641]))
     References
     ----------
     Based on the formulas in "A guide to coordinate systems in Great Britain".
@@ -235,7 +235,7 @@ def get_gps_lat_long_from_easting_northing(east, north, rads=False, dms=False,da
     Examples
     --------
     >>> get_gps_lat_long_from_easting_northing([429157], [623009])
-    (array([55.5]), array([-1.540008]))
+    (array([55.4972255]), array([-1.54004092]))
     References
     ----------
     Based on the formulas in "A guide to coordinate systems in Great Britain".
