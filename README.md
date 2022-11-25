@@ -74,7 +74,7 @@ See below for a description of the main functionality in tool.py and an example 
    - tool.get_annual_flood_risk_from_WGS84(longitudes=[0], latitudes=[50])
    - tool.get_annual_flood_risk_from_OSGB36(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0])
 
-#### Visualisation 
+#### Data Visualiser
 1. In the command line run 'python DataVisualisation.py'.
 2. Open file 'a_map.html' and jump to the online interactive map.
 3. Click on the buttons to visualise different parameters.
