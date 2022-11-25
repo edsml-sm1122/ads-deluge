@@ -45,7 +45,7 @@ The first step to use the tool is to import tool from flood_tool and initialise 
 
 See below for a description of the main functionality in tool.py and an example on how to use it. 
 
-- Convert between UK ordanance survey easting/northing coordinates, GPS latitude & longitude, and postcode.
+1. Convert between UK ordanance survey easting/northing coordinates, GPS latitude & longitude, and postcode.
    - To find eastings and northings from postcode:
       - tool.get_easting_northing(postcodes=['BN1 5PF'])
    - To find latitude and longitude from postcode:
@@ -54,15 +54,19 @@ See below for a description of the main functionality in tool.py and an example 
       - tool.get_postcode_from_OSGB36(eastings=[417997.0], northings=[97342.0])
    - To find postcode from latitude and longitude:
       - tool.get_postcodes_from_WGS84(latitudes=[50], longitudes=[0])
-- Predict the median house price for input postcodes (use tool.get_house_price_methods() to see available methods).
-   - tool.get_median_house_price_estimate(postcodes=['BN1 5PF'], method=1)
-- Predict the Local Authority for arbitrary locations (use tool.get_local_authority_methods() to see available methods).
+
+2. Predict the Local Authority for arbitrary locations (use tool.get_local_authority_methods() to see available methods).
    - tool.get_local_authority_estimate(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0], method=1)
-- Predict flood probability for input postcodes or arbitrary locations (use tool.get_flood_class_from_locations_methods() to see available methods)
+
+3. Predict the median house price for input postcodes (use tool.get_house_price_methods() to see available methods).
+   - tool.get_median_house_price_estimate(postcodes=['BN1 5PF'], method=1)
+
+4. Predict flood probability for input postcodes or arbitrary locations (use tool.get_flood_class_from_locations_methods() to see available methods)
    - tool.get_flood_class_from_postcodes(postcodes=['BN1 5PF'], method=1)
    - tool.get_flood_class_from_OSGB36_locations(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0], method=1)
    - tool.get_flood_class_from_WGS84_locations(longitudes=[0], latitudes=[50], method=1)
-- Predict flood risk for input postcodes or arbitrary locations.
+   
+5. Predict flood risk for input postcodes or arbitrary locations.
    - tool.get_annual_flood_risk(postcodes['BN1 5PF'])
    - tool.get_annual_flood_risk_from_WGS84(longitudes=[0], latitudes=[50])
    - tool.get_annual_flood_risk_from_OSGB36(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0])
