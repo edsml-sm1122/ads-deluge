@@ -82,6 +82,58 @@ See below for a description of the main functionality in tool.py and an example 
 
 ![visualiser](images/visualiser_screenshot.png)
 
+## Usage of command line:
+
+|input data|usage|
+|---|---|
+| postcodes | -p |
+|OSGB36_eastings|-oe|
+|OSGB36_northings|-on|
+|WGS84_longitudes|-wo|
+|WGS84_latitudes|-wa|
+
+- The expected input format will be a string, and each element is seperated by a comma. 
+- For example: **"CT2 8AA,TN28 8XN"**
+
+|function|usage|
+|---|---|
+|get_flood_class_from_postcodes| -g1 |
+|get_median_house_price_estimate| -g2 |
+|get_local_authority_estimate_postcodes| -g3 |
+|get_total_value | -g4 |
+|get_annual_flood_risk | -g5 |
+|get_flood_class_from_OSGB36_locations | -g1_OSGB |
+|get_local_authority_estimate_from_OSGB36_locations | -g3_OSGB |
+|get_annual_flood_risk_from_OSGB36 | -g5_OSGB |
+|get_flood_class_from_WGS84_locations| -g1_WGS |
+|get_local_authority_estimate_latitude_longitude| -g3_WGS |
+|get_annual_flood_risk_from_WGS84 | -g5_WGS | 
+
+**Example** `(get annual flood risk from sets of postcodes)` :
+
+\>>> python command_line_tool.py -p "CT2 8AA,TN28 8XN" -g5
+
+\>>> Predicted annual flood rirsk from postcodes:
+
+CT2 8AA     5723.422968
+
+TN28 8XN      18.231949
+
+dtype: float64
+
+
+**Example** `(get local authority estimate from OSGB36 locations)` :
+
+\>>> python command_line_tool.py -oe "552132.0,527448.0" -on "129270.0,106738.0" -g3_OSGB
+
+\>>> Predicted flood class from OSGB36 locations:
+
+552132.0  129270.0              Wealden
+
+527448.0  106738.0    Brighton and Hove
+
+Name: localAuthority, dtype: object
+
 ### Documentation
 
 _This section should be updated during the week._
