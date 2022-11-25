@@ -41,10 +41,10 @@ The tool.py file combines the main functionality of the flood risk tool.
 <br>
 The first step to use the tool is to import tool from flood_tool and initialise the class: 
 * import tool from flood_tool
-* tool = tool.Tool()
+* tool = tool.Tool(UNLABELLED, LABELLED)
 
 Then train all models that can be used by giving a labelled set of samples:
-* tool.train(LABELLED_DATA_PATH)
+* tool.train()
 
 See below for a description of the main functionality in tool.py and an example on how to use it. 
 
