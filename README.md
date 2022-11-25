@@ -32,7 +32,33 @@ This README file *should be updated* over the course of your group's work to rep
 
  ### Installation Guide
 
-*To be written by you during the week*
+**Prerequisite**
+
+This project uses conda as a package maanger. You should have conda configured on your local machine before installing the project. 
+
+```conda -V``` 
+
+**Installation and configuration**
+
+* To install the project, first clone the repository: 
+
+```git clone https://github.com/ese-msc-2022/ads-deluge-Thames.git```
+
+* Go to the git repository on you local computer: 
+
+```cd ads-deluge-Thames```
+
+* Then configure the conda environment:
+
+```conda env create -f environment.yml```
+
+* Activate the `deluge` conda environment:
+
+```conda activate deluge```
+
+* Once you have finished using the tool, you can deactivate the conda environment using the following command:
+
+```conda deactivate```
 
 ### User instructions
 
