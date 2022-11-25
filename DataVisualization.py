@@ -53,7 +53,7 @@ typ_tide = typ[(typ.qualifier=='Tidal Level') & (typ.value<200)].groupby('statio
 # In[4]:
 
 
-# find the location for each station (if the station laction contained in the original datas)
+# find the location for each station (if we have)
 reflatlon = {'lat':{},'lon':{}}
 for i in range(len(refLoc)):
     reflatlon['lat'][refLoc.stationReference[i]] = refLoc.latitude[i]
@@ -134,6 +134,7 @@ def addlayer(lat,lon,value,name,levels,cmtype):
     ----------
     Inspired by: https://www.tjansson.dk/2018/10/contour-map-in-folium/
     '''
+    
     mean = value.mean()
     std  = value.std()
     colors = cmap2color(cmtype,levels)
@@ -214,9 +215,7 @@ def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=leve
     Parameters
     ----------
     toplot: list of str
-        The elements you would like to plot. Default to all the element you can plot, including the data for a typical day, a wet day, station live rain,
-        and all the outputs of the models. 
-        (['typ_rain', 'typ_river','typ_tide','wet_rain','wet_river','wet_tide','class','medianPrice','impact','risk','total_value','live_rain'])
+        The elements you would like to plot. Default to all the element you can plot, including the data for a typical day, a wet         day, station live rain, and all the outputs of the models.      (['typ_rain','typ_river','typ_tide','wet_rain','wet_river','wet_tide','class','medianPrice','impact','risk','total_value','live_rain'])
         
     data: dictionary
         With key the name of the target to plot and the value a pd.Dataframe including columns named lat, lon and
@@ -238,12 +237,14 @@ def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=leve
         Type of tile to generate the base map. default to 'cartodbpositron'. 
         
     meteoEle: list of str
-        List of extra meteorological information which wil be ploted. Default to none. Support 'temperature', 'dewPoint','humidity','windSpeed','windDirection','windGust','pressureSeaLevel','precipitationIntensity','visibility','cloudBase','cloudCeiling',
-          'particulateMatter25','pollutantNO2','pollutantCO','fireIndex','floodIndex','soilMoistureVolumetric40To100'. 
+        List of extra meteorological information which wil be ploted. Default to none. Support 'temperature', 'dewPoint','humidity','windSpeed','windDirection','windGust','pressureSeaLevel','precipitationIntensity','visibility','cloudBase','cloudCeiling','particulateMatter25','pollutantNO2','pollutantCO','fireIndex','floodIndex','soilMoistureVolumetric40To100'. 
     
     marker: bool
         If true, then will mark the at risk station according to the offline typical day and wet day data. If False, will not plot the marker. Default to True.
-
+        
+    Returns
+    -------
+        geomap: folium map
        '''
     API_KEY = '758331efe8e44d18a78e8a61a30ff2bf'
     
