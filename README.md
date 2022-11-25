@@ -79,8 +79,6 @@ See below for a description of the main functionality in tool.py and an example 
 2. Open file 'a_map.html' and jump to the online interactive map.
 3. Click on the buttons to visualise different parameters.
 
-![Visualiser](images/visualiser_screenshot.png)
-
 
 
 
