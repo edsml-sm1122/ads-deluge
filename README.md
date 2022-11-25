@@ -43,7 +43,7 @@ This README file *should be updated* over the course of your group's work to rep
 This software is composed of two main part. 
 
 * A risk tool, allowing the user to predict different properties such as the local authority, the median house price, the flood probability and the overall flood risk using different location inputs. The possible inputs are UK postcodes, easting and northing coordinates and gps coordinates. 
-* A visualization tool that allows the user to have a general overview of the properties mentioned above. This tool is organized in layers so that the user can select only the information needed and can display them of different types of maps. 
+* A visualization tool that allows the user to have a general overview of the properties mentioned above. This tool is organized in layers so that the user can select only the information needed and can display them of different types of maps. It can also detect areas with abnormal values of rain or tides. These areas are evaluated in the `indicate_area_at_risk.ipynb`.
 
 
 ### A brief technical overview of the risk tool.
@@ -63,6 +63,7 @@ The `geo.py` file contains functions to convert easting/northing coordinates to 
 The `live.py` file contains functions to get rainfall or tidal data from a given dataset or to retrieve similar data from an API. The API called is https://environment.data.gov.uk/flood-monitoring/id/stations/. 
 
 Finally, the flood_tool package contains a series of unit tests defined in the tests folder.
+
 
 
 ### Documentation
