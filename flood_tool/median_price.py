@@ -95,7 +95,7 @@ class MedianPriceModel():
         >>> trained_model = model.train_model()
         
         """
-        method_dict = {1:KNeighborsRegressor(n_neighbors=1, algorithm='ball_tree', p=2)}
+        method_dict = {1:KNeighborsRegressor(n_neighbors=5, algorithm='ball_tree', p=2, weights='distance')}
         
         # Create pipeline
         num_pipe = Pipeline([('imputer', SimpleImputer()), ('scaler', MinMaxScaler())])
