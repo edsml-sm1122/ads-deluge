@@ -168,7 +168,7 @@ def addlayer(lat,lon,value,name,levels,cmtype):
     return layer,cm_
 
 
-# In[7]:
+# In[68]:
 
 
 cmdefault = {'typ_rain':'Greens','typ_river':'YlOrBr','typ_tide':'Greys','wet_rain':'Reds',
@@ -176,176 +176,8 @@ cmdefault = {'typ_rain':'Greens','typ_river':'YlOrBr','typ_tide':'Greys','wet_ra
 
 levelsdefault = {'typ_rain':6,'typ_river':6,'typ_tide':6,'wet_rain':6,
        'wet_river':6,'wet_tide':6}
-ploted = ['typ_rain', 'typ_river','typ_tide','wet_rain','wet_river','wet_tide','class','medianPrice','impact','risk','total_value']
 
-def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=levelsdefault ,tile='cartodbpositron',meteoEle = ['precipitationIntensity','dewPoint'], marker=True):
-    '''Plot the contourf based on the folium package.
-    
-    Parameters
-    ----------
-   toplot: list of str
-        The non-al
-    data: dictionary
-        With key the name of the target to plot and the value a pd.Dataframe including columns named lat, lon and
-        value. Default to be a dic of len 6, corresponding to the data of a typical day and wet day, each have three 
-        kinds of measurement(river, tide and rain). 
-        
-    avoidrun: int
-        Do not change this, or the function will raise an error
-
-    cmtype: dic
-        Please ensure the dictionary include all the keys in dic data, with the value of the key a str that you'd like
-        to use to plot the key, support all kinds of pyplot cmap.
-        
-    levels: dir
-        Please ensure the dictionary include all the keys in dic data, with the value of the key a number that you'd like
-        to set contourf level.
-    
-    tile: str
-        Type of tile to generate the base map. default to 'cartodbpositron'. 
-        
-    References
-    ----------
-    Inspired by: https://www.tjansson.dk/2018/10/contour-map-in-folium/
-       '''
-    API_KEY = '758331efe8e44d18a78e8a61a30ff2bf'
-    
-    # Set up the folium plot
-    geomap = folium.Map([52, -1.2], zoom_start=7, tiles=tile,control_scale=True);
-    folium.TileLayer('Stamen Terrain').add_to(geomap)
-    folium.TileLayer('Stamen Toner').add_to(geomap)
-    folium.TileLayer(tiles='https://{s}.tile.thunderforest.com/pioneer/{z}/{x}/{y}.png?apikey=' +
-        API_KEY, name='thunderforestpioneer',attr='na').add_to(geomap)
-    folium.TileLayer(tiles='http://tile.stamen.com/watercolor/{z}/{x}/{y}.jpg',attr='na',name='stamenwater',overlay=True, opacity=0.6).add_to(geomap)
-    folium.TileLayer(tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',attr='na',name='EsriWorld').add_to(geomap)
-
-    time = dt.now().isoformat(timespec='milliseconds')+'Z'
-    meteo=['temperature', 'dewPoint','humidity','windSpeed','windDirection','windGust','pressureSeaLevel','precipitationIntensity','visibility','cloudBase','cloudCeiling',
-          'particulateMatter25','pollutantNO2','pollutantCO','fireIndex','floodIndex','soilMoistureVolumetric40To100']
-    for i in meteoEle:
-        if i not in meteo:
-            print(f'wrong meteoele input {i}')
-            meteoEle.remove(i)
-            
-    for i in range(len(meteoEle)):
-        folium.TileLayer(name=meteoEle[i],tiles= 
-              'https://api.tomorrow.io/v4/map/tile/{z}/{x}/{y}/'+f'{meteoEle[i]}/{time}.png?apikey=rb0ZKOGPoCC2jWswc6y4UOWR3jTQzUlQ',attr='1',overlay=True,opacity=0.8,show=False).add_to(geomap)
-
-    for key,df in data.items():
-        if key in toplot:
-            layer,cm_ = addlayer(df.lat,df.lon,df.value,key,levels[key],cmtypes[key])
-            feature_group = FeatureGroup(name=key,show=False)
-            feature_group.add_child(layer)
-            geomap.add_child(feature_group)
-            if 'rain' in key:
-                cm_.caption = key+'(mm/15min (averaged))'
-            elif 'tide' in key:
-                cm_.caption = key+'(mAOD)'
-            elif 'river' in key:
-                cm_.caption = key+'(mASD)'
-            elif ('rice' in key) or ('risk' in key):
-                cm_.caption = key+'(£)'
-                
-            geomap.add_child(cm_)
-            
-    if marker:
-        feature_group = FeatureGroup(name='marked_abnormal',show=False)
-        for i in range(len(risk)):
-            folium.Marker([risk.lat[i], risk.lon[i]], popup='station:'+risk.index[i]+f'; river_level:{risk.value[i]}; impact:{risk.impact[i]}').add_to(feature_group)
-    geomap.add_child(feature_group)
-    
-    # Add the colormap to the folium map
-    folium.LayerControl().add_to(geomap)     
-    
-    
-    # Fullscreen mode
-    plugins.Fullscreen(position='topright', force_separate_button=True).add_to(geomap);
-    geomap.add_child(folium.LatLngPopup())
-    
-    
-    return geomap;
-    # Plot the data
-    # geomap.save(f'data/folium_contour_temperature_map.html')
-
-
-# In[8]:
-
-
-impact = pd.read_csv('impact.csv')
-impact['lon']=impact['long']
-impact = impact.drop(columns='long')
-risk = pd.concat([wet_river.loc['2660'],wet_river.loc['2830']],axis=1).T
-risk['impact']=np.array([2200154,4590502])
-
-
-# In[9]:
-
-
-plotonmap(toplot=['typ_rain'],meteoEle = ['temperature','precipitationIntensity'])
-# plotonmap(meteoEle = ['temperature','precipitationIntensity'])
-
-
-# In[10]:
-
-
-unlabeled = pd.read_csv('./flood_tool/resources/postcodes_unlabelled.csv')
-pt = unlabeled.postcode
-too = flood_tool.tool.Tool()
-df = too.get_lat_long(pt)
-df = df.drop_duplicates()
-too.train()
-
-
-# In[11]:
-
-
-df['class'] = too.get_flood_class_from_postcodes(df.index).values
-df['medianPrice'] = too.get_median_house_price_estimate(df.index).values
-df['risk'] = too.get_annual_flood_risk(df.index).values
-df['total_value'] = too.get_total_value(df.index).values
-
-
-# In[12]:
-
-
-elenew = ele.copy()
-
-
-df['value'] = df.medianPrice.copy()
-elenew['medianPrice'] = df.copy()
-
-df['value'] = df['class'].copy()
-elenew['class'] = df.copy()
-
-df['value'] = df['risk'].copy()
-elenew['risk'] = df.copy()
-
-df['value'] = df['total_value'].copy()
-elenew['total_value'] = df.copy()
-
-
-cmnew = cmdefault.copy()
-cmnew['medianPrice'] = 'viridis'
-cmnew['class'] = 'magma'
-cmnew['risk'] = 'cividis'
-cmnew['total_value'] = 'plasma'
-
-levelsnew = levelsdefault.copy()
-levelsnew['medianPrice'] = 6
-levelsnew['class'] = 10
-levelsnew['risk'] = 6
-levelsnew['total_value'] = 6
-
-
-# In[13]:
-
-
-cmdefault = {'typ_rain':'Greens','typ_river':'YlOrBr','typ_tide':'Greys','wet_rain':'Reds',
-       'wet_river':'Blues','wet_tide':'Purples'}
-
-levelsdefault = {'typ_rain':6,'typ_river':6,'typ_tide':6,'wet_rain':6,
-       'wet_river':6,'wet_tide':6}
-ploted = ['typ_rain', 'typ_river','typ_tide','wet_rain','wet_river','wet_tide','class','medianPrice','impact','risk']
+ploted = ['typ_rain', 'typ_river','typ_tide','wet_rain','wet_river','wet_tide','class','medianPrice','impact','risk','total_value','live_rain']
 
 def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=levelsdefault ,tile='cartodbpositron',meteoEle = [], marker=True):
     '''Plot the contourf based on the folium package.
@@ -435,15 +267,121 @@ def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=leve
     return geomap;
 
 
-# In[14]:
+# In[8]:
 
 
-mapgeo = plotonmap(data=elenew,cmtypes= cmnew, levels=levelsnew,meteoEle=['precipitationIntensity'])
+impact = pd.read_csv('impact.csv')
+impact['lon']=impact['long']
+impact = impact.drop(columns='long')
+risk = pd.concat([wet_river.loc['2660'],wet_river.loc['2830']],axis=1).T
+risk['impact']=np.array([2200154,4590502])
+
+
+# In[10]:
+
+
+unlabeled = pd.read_csv('./flood_tool/resources/postcodes_unlabelled.csv')
+pt = unlabeled.postcode
+too = flood_tool.tool.Tool()
+df = too.get_lat_long(pt)
+df = df.drop_duplicates()
+too.train()
+
+
+# In[ ]:
+
+
+# If you have already run the result
+
+
+# In[11]:
+
+
+df['class'] = too.get_flood_class_from_postcodes(df.index).values
+df['medianPrice'] = too.get_median_house_price_estimate(df.index).values
+df['risk'] = too.get_annual_flood_risk(df.index).values
+df['total_value'] = too.get_total_value(df.index).values
+
+
+# In[ ]:
+
+
+live_rain = wet_rain.copy().dropna()
+error = 0
+for i in range(len(live_rain)):
+    try:
+        live_rain.value[i] = flood_tool.live.get_live_station_data(live_rain.index.values[i])
+    except Exception:
+        error += 1
+        pass
+print(f'live rain stations no data: {error}')
+
+
+# In[77]:
+
+
+elenew = ele.copy()
+
+
+df['value'] = df.medianPrice.copy()
+elenew['medianPrice'] = df.copy()
+
+df['value'] = df['class'].copy()
+elenew['class'] = df.copy()
+
+df['value'] = df['risk'].copy()
+elenew['risk'] = df.copy()
+
+df['value'] = df['total_value'].copy()
+elenew['total_value'] = df.copy()
+
+elenew['live_rain'] = live_rain
+
+cmnew = cmdefault.copy()
+cmnew['medianPrice'] = 'viridis'
+cmnew['class'] = 'magma'
+cmnew['risk'] = 'cividis'
+cmnew['total_value'] = 'plasma'
+cmnew['live_rain'] = 'Blues'
+
+levelsnew = levelsdefault.copy()
+levelsnew['medianPrice'] = 6
+levelsnew['class'] = 10
+levelsnew['risk'] = 6
+levelsnew['total_value'] = 6
+levelsnew['live_rain'] = 6
+
+
+# In[78]:
+
+
+mapgeo = plotonmap(data=elenew,cmtypes= cmnew, levels=levelsnew,meteoEle=['precipitationIntensity','particulateMatter25','windDirection','dewPoint'])
 mapgeo
 
 
-# In[15]:
+# In[62]:
 
 
-mapgeo.save(f'a_map.html')
+mapgeo.save(f'./map/a_map.html')
+
+
+# In[58]:
+
+
+toplotnew  = ['wet_rain','wet_river','wet_tide','class','medianPrice','impact','risk','live_rain']
+
+rainday = plotonmap(toplot = toplotnew, data=elenew,cmtypes= cmnew, levels=levelsnew,meteoEle=['precipitationIntensity'])
+rainday
+
+
+# In[61]:
+
+
+rainday.save(f'./map/rainday.html')
+
+
+# In[ ]:
+
+
+
 
