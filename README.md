@@ -36,11 +36,12 @@ This README file *should be updated* over the course of your group's work to rep
 
 ### User instructions
 
-# Risk Tool
-- The tool.py file combines the main functionality of the flood risk tool.
-- The first step to use the tool is to import tool from flood_tool and initialise the class: 
-      - import tool from flood_tool
-      - tool = tool.Tool()
+#### Risk Tool
+The tool.py file combines the main functionality of the flood risk tool. 
+<br>
+The first step to use the tool is to import tool from flood_tool and initialise the class: 
+* import tool from flood_tool
+* tool = tool.Tool()
 
 See below for a description of the main functionality in tool.py and an example on how to use it. 
 
