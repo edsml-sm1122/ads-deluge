@@ -53,7 +53,7 @@ typ_tide = typ[(typ.qualifier=='Tidal Level') & (typ.value<200)].groupby('statio
 # In[4]:
 
 
-# find the location for each station (if we have)
+# find the location for each station (if the station laction contained in the original datas)
 reflatlon = {'lat':{},'lon':{}}
 for i in range(len(refLoc)):
     reflatlon['lat'][refLoc.stationReference[i]] = refLoc.latitude[i]
@@ -104,7 +104,36 @@ def cmap2color(maptype,levels):
 
 
 def addlayer(lat,lon,value,name,levels,cmtype):
+    '''Create a folium.GeoJson instance for further plotting. The instance try to plot contourf on a folium map.
     
+    Parameters
+    ----------
+
+    lat,lon: sequence of floats
+        Location of the value that you'd like to plot.
+
+    levels: int
+        Number of levels of contourf 
+        
+    name: str
+        The name of the value
+        
+    cmtype: str
+        The name of the cmap used in the contourf
+        
+    Returns
+    -------
+
+    layer
+        a folium.GeoJson instance as a contourf
+        
+    cm_
+        a branca.colormap.LinearColormap instance as the colorbar
+    
+    References
+    ----------
+    Inspired by: https://www.tjansson.dk/2018/10/contour-map-in-folium/
+    '''
     mean = value.mean()
     std  = value.std()
     colors = cmap2color(cmtype,levels)
@@ -184,15 +213,18 @@ def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=leve
     
     Parameters
     ----------
-   toplot: list of str
-        The non-al
+    toplot: list of str
+        The elements you would like to plot. Default to all the element you can plot, including the data for a typical day, a wet day, station live rain,
+        and all the outputs of the models. 
+        (['typ_rain', 'typ_river','typ_tide','wet_rain','wet_river','wet_tide','class','medianPrice','impact','risk','total_value','live_rain'])
+        
     data: dictionary
         With key the name of the target to plot and the value a pd.Dataframe including columns named lat, lon and
         value. Default to be a dic of len 6, corresponding to the data of a typical day and wet day, each have three 
         kinds of measurement(river, tide and rain). 
         
     avoidrun: int
-        Do not change this, or the function will raise an error
+        Do not change this, or the function could raise an error
 
     cmtype: dic
         Please ensure the dictionary include all the keys in dic data, with the value of the key a str that you'd like
@@ -205,9 +237,13 @@ def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=leve
     tile: str
         Type of tile to generate the base map. default to 'cartodbpositron'. 
         
-    References
-    ----------
-    Inspired by: https://www.tjansson.dk/2018/10/contour-map-in-folium/
+    meteoEle: list of str
+        List of extra meteorological information which wil be ploted. Default to none. Support 'temperature', 'dewPoint','humidity','windSpeed','windDirection','windGust','pressureSeaLevel','precipitationIntensity','visibility','cloudBase','cloudCeiling',
+          'particulateMatter25','pollutantNO2','pollutantCO','fireIndex','floodIndex','soilMoistureVolumetric40To100'. 
+    
+    marker: bool
+        If true, then will mark the at risk station according to the offline typical day and wet day data. If False, will not plot the marker. Default to True.
+
        '''
     API_KEY = '758331efe8e44d18a78e8a61a30ff2bf'
     
@@ -270,6 +306,7 @@ def plotonmap(toplot=ploted,data=ele,avoidrun=1, cmtypes= cmdefault, levels=leve
 # In[8]:
 
 
+# Read the two dangerous location according to the offline two days data. The decision is made in indicate_area_at_risk.ipynb
 impact = pd.read_csv('impact.csv')
 impact['lon']=impact['long']
 impact = impact.drop(columns='long')
@@ -280,18 +317,15 @@ risk['impact']=np.array([2200154,4590502])
 # In[10]:
 
 
+# Build a integrated dataframe for all the model result, using all the unlabeld postcode.
+# NB. If you have already sabe your model resuilt somewhere, just read it directlt, do not do the prediction again
+# cost you time.
 unlabeled = pd.read_csv('./flood_tool/resources/postcodes_unlabelled.csv')
 pt = unlabeled.postcode
 too = flood_tool.tool.Tool()
 df = too.get_lat_long(pt)
 df = df.drop_duplicates()
 too.train()
-
-
-# In[ ]:
-
-
-# If you have already run the result
 
 
 # In[11]:
@@ -306,6 +340,7 @@ df['total_value'] = too.get_total_value(df.index).values
 # In[ ]:
 
 
+# Grab live rain data from online
 live_rain = wet_rain.copy().dropna()
 error = 0
 for i in range(len(live_rain)):
@@ -320,6 +355,7 @@ print(f'live rain stations no data: {error}')
 # In[77]:
 
 
+# Convert to what the plot function can accept
 elenew = ele.copy()
 
 
