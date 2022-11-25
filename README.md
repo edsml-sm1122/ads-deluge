@@ -34,31 +34,43 @@ This README file *should be updated* over the course of your group's work to rep
 
 **Prerequisite**
 
-This project uses conda as a package maanger. You should have conda configured on your local machine before installing the project. 
+This project uses conda as a package manager. You should have conda configured on your local machine before installing the project. 
 
-```conda -V``` 
+```bash
+conda -V
+``` 
 
 **Installation and configuration**
 
 * To install the project, first clone the repository: 
 
-```git clone https://github.com/ese-msc-2022/ads-deluge-Thames.git```
+```bash
+git clone https://github.com/ese-msc-2022/ads-deluge-Thames.git
+```
 
 * Go to the git repository on you local computer: 
 
-```cd ads-deluge-Thames```
+```bash
+cd ads-deluge-Thames
+```
 
 * Then configure the conda environment:
 
-```conda env create -f environment.yml```
+```bash
+conda env create -f environment.yml
+```
 
 * Activate the `deluge` conda environment:
 
-```conda activate deluge```
+```bash
+conda activate deluge
+```
 
 * Once you have finished using the tool, you can deactivate the conda environment using the following command:
 
-```conda deactivate```
+```bash
+conda deactivate
+```
 
 ### User instructions
 
@@ -89,7 +101,7 @@ Then following the instructions to process the `FloodTool.tex` file in the `late
 The tool includes several tests, which you can use to check its operation on your system. With [pytest](https://doc.pytest.org/en/latest) installed, these can be run with
 
 ```bash
-python -m pytest --doctest-modules flood_tool
+python -m pytest flood_tool
 ```
 
 ### Reading list
