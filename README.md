@@ -80,7 +80,7 @@ See below for a description of the main functionality in tool.py and an example 
 3. Click on the buttons to visualise different types of data.
 4. Open the DataVisualization.py file and change the file path passed to the variable 'unlabeled' to plot predictions for a different dataset. Go back to step 1 to run the program. 
 
-![visualiser] (images/visualiser_screenshot.png)
+![visualiser](images/visualiser_screenshot.png)
 
 ### Documentation
 
