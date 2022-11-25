@@ -72,9 +72,112 @@ conda activate deluge
 conda deactivate
 ```
 
+### Who is this software for?
+
+-	Property agents to calculate risk of their properties
+-	Government to prepare for flooding
+- Environment NGOs
+- Insurance companies
+
 ### User instructions
 
-*To be written by you during the week*
+#### Risk Tool
+The tool.py file combines the main functionality of the flood risk tool. 
+<br>
+The first step to use the tool is to import tool from flood_tool and initialise the class: 
+* import tool from flood_tool
+* tool = tool.Tool(UNLABELLED, LABELLED)
+
+Then train all models that can be used by giving a labelled set of samples:
+* tool.train()
+
+See below for a description of the main functionality in tool.py and an example on how to use it. 
+
+1. Convert between UK ordanance survey easting/northing coordinates, GPS latitude & longitude, and postcode.
+   - To find eastings and northings from postcode:
+      - tool.get_easting_northing(postcodes=['BN1 5PF'])
+   - To find latitude and longitude from postcode:
+      - tool.get_lat_long(postcodes=['BN1 5PF'])
+   - To find postcode from easting and northing:
+      - tool.get_postcode_from_OSGB36(eastings=[417997.0], northings=[97342.0])
+   - To find postcode from latitude and longitude:
+      - tool.get_postcodes_from_WGS84(latitudes=[50], longitudes=[0])
+
+2. Predict the Local Authority for arbitrary locations (use tool.get_local_authority_methods() to see available methods).
+   - tool.get_local_authority_estimate(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0], method=1)
+
+3. Predict the median house price for input postcodes (use tool.get_house_price_methods() to see available methods).
+   - tool.get_median_house_price_estimate(postcodes=['BN1 5PF'], method=1)
+
+4. Predict flood probability for input postcodes or arbitrary locations (use tool.get_flood_class_from_locations_methods() to see available methods)
+   - tool.get_flood_class_from_postcodes(postcodes=['BN1 5PF'], method=1)
+   - tool.get_flood_class_from_OSGB36_locations(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0], method=1)
+   - tool.get_flood_class_from_WGS84_locations(longitudes=[0], latitudes=[50], method=1)
+
+5. Predict flood risk for input postcodes or arbitrary locations.
+   - tool.get_annual_flood_risk(postcodes['BN1 5PF'])
+   - tool.get_annual_flood_risk_from_WGS84(longitudes=[0], latitudes=[50])
+   - tool.get_annual_flood_risk_from_OSGB36(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0])
+
+#### Data Visualiser
+1. In the command line run 'python DataVisualization.py'. This may take a few minutes to run.
+2. Open file 'a_map.html' and jump to the online interactive map.
+3. Click on the buttons to visualise different types of data.
+4. Open the DataVisualization.py file and change the file path passed to the variable 'unlabeled' to plot predictions for a different dataset. Go back to step 1 to run the program. 
+
+![visualiser](images/visualiser_screenshot.png)
+
+## Usage of command line:
+
+|input data|usage|
+|---|---|
+| postcodes | -p |
+|OSGB36_eastings|-oe|
+|OSGB36_northings|-on|
+|WGS84_longitudes|-wo|
+|WGS84_latitudes|-wa|
+
+- The expected input format will be a string, and each element is seperated by a comma. 
+- For example: **"CT2 8AA,TN28 8XN"**
+
+|function|usage|
+|---|---|
+|get_flood_class_from_postcodes| -g1 |
+|get_median_house_price_estimate| -g2 |
+|get_local_authority_estimate_postcodes| -g3 |
+|get_total_value | -g4 |
+|get_annual_flood_risk | -g5 |
+|get_flood_class_from_OSGB36_locations | -g1_OSGB |
+|get_local_authority_estimate_from_OSGB36_locations | -g3_OSGB |
+|get_annual_flood_risk_from_OSGB36 | -g5_OSGB |
+|get_flood_class_from_WGS84_locations| -g1_WGS |
+|get_local_authority_estimate_latitude_longitude| -g3_WGS |
+|get_annual_flood_risk_from_WGS84 | -g5_WGS | 
+
+**Example** `(get annual flood risk from sets of postcodes)` :
+
+\>>> python command_line_tool.py -p "CT2 8AA,TN28 8XN" -g5
+
+\>>> Predicted annual flood rirsk from postcodes:
+
+CT2 8AA     5723.422968
+
+TN28 8XN      18.231949
+
+dtype: float64
+
+
+**Example** `(get local authority estimate from OSGB36 locations)` :
+
+\>>> python command_line_tool.py -oe "552132.0,527448.0" -on "129270.0,106738.0" -g3_OSGB
+
+\>>> Predicted flood class from OSGB36 locations:
+
+552132.0  129270.0              Wealden
+
+527448.0  106738.0    Brighton and Hove
+
+Name: localAuthority, dtype: object
 
 ### How does this software works ?
 
