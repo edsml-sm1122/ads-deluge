@@ -88,7 +88,7 @@ The first step to use the tool is to import tool from flood_tool and initialise 
 * import tool from flood_tool
 * tool = tool.Tool(UNLABELLED, LABELLED)
 
-Then train all models that can be used by giving a labelled set of samples:
+Then train all models that can be used:
 * tool.train()
 
 See below for a description of the main functionality in tool.py and an example on how to use it. 
