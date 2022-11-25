@@ -38,6 +38,34 @@ This README file *should be updated* over the course of your group's work to rep
 
 *To be written by you during the week*
 
+### How does this software works ?
+
+This software is composed of two main part. 
+
+* A risk tool, allowing the user to predict different properties such as the local authority, the median house price, the flood probability and the overall flood risk using different location inputs. The possible inputs are UK postcodes, easting and northing coordinates and gps coordinates. 
+* A visualization tool that allows the user to have a general overview of the properties mentioned above. This tool is organized in layers so that the user can select only the information needed and can display them of different types of maps. It can also detect areas with abnormal values of rain or tides. These areas are evaluated in the `indicate_area_at_risk.ipynb`.
+
+
+### A brief technical overview of the risk tool.
+
+The main functionalities of the Risk Tool are gathered in python files in the flood_tool folder and more specifically in the tool.py file. 
+
+The different models to predict the house median price, the local authority and the flood probability are defined as modules in the flood_tool package. Some models can be trained using different methods. 
+
+The tool.py file contains a train function which will train the models in every methods available. It also contains the different functions that predict the wanted properties with different type of location input. 
+
+* The local authority model, defined in the `local_authority.py`, uses a KNN classifier to predict the local authority from easting and northing
+* The median price model, defined in the `median_price.py`, uses a KNN Regressor to predict the house median price from a postcode
+* The flood probability model, defined in the `flood_prob.py` can be trained either by using a Random Forest Regressor or a KNN Regressor from a postcode. 
+
+The `geo.py` file contains functions to convert easting/northing coordinates to latitude/longitudes. 
+
+The `live.py` file contains functions to get rainfall or tidal data from a given dataset or to retrieve similar data from an API. The API called is https://environment.data.gov.uk/flood-monitoring/id/stations/. 
+
+Finally, the flood_tool package contains a series of unit tests defined in the tests folder.
+
+
+
 ### Documentation
 
 _This section should be updated during the week._
