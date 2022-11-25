@@ -43,6 +43,9 @@ The first step to use the tool is to import tool from flood_tool and initialise 
 * import tool from flood_tool
 * tool = tool.Tool()
 
+Then train all models that can be used by giving a labelled set of samples:
+* tool.train(LABELLED_DATA_PATH)
+
 See below for a description of the main functionality in tool.py and an example on how to use it. 
 
 1. Convert between UK ordanance survey easting/northing coordinates, GPS latitude & longitude, and postcode.
@@ -65,12 +68,18 @@ See below for a description of the main functionality in tool.py and an example 
    - tool.get_flood_class_from_postcodes(postcodes=['BN1 5PF'], method=1)
    - tool.get_flood_class_from_OSGB36_locations(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0], method=1)
    - tool.get_flood_class_from_WGS84_locations(longitudes=[0], latitudes=[50], method=1)
-   
+
 5. Predict flood risk for input postcodes or arbitrary locations.
    - tool.get_annual_flood_risk(postcodes['BN1 5PF'])
    - tool.get_annual_flood_risk_from_WGS84(longitudes=[0], latitudes=[50])
    - tool.get_annual_flood_risk_from_OSGB36(eastings=[417997.0, 535049.0], northings=[97342.0, 169939.0])
 
+#### Visualisation 
+1. In the command line run 'python DataVisualisation.py'.
+2. Open file 'a_map.html' and jump to the online interactive map.
+3. Click on the buttons to visualise different parameters.
+
+![Visualiser](images/visualiser_screenshot.png)
 
 
 
